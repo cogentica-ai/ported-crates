@@ -40,6 +40,11 @@ mod ipnet;
 mod ipmask;
 mod ip_slice;
 mod ipnet_slice;
+#[path = "func_flag.rs"]
+mod func_flag;
+mod bool_func;
+mod string_slice_pkg;
+mod string_array_pkg;
 mod int8;
 mod uint_slice;
 mod uint16;
@@ -74,6 +79,10 @@ pub use crate::ipnet::*;
 pub use crate::ipmask::*;
 pub use crate::ip_slice::*;
 pub use crate::ipnet_slice::*;
+pub use crate::func_flag::*;
+pub use crate::bool_func::*;
+pub use crate::string_slice_pkg::*;
+pub use crate::string_array_pkg::*;
 pub use crate::int8::*;
 pub use crate::uint_slice::*;
 pub use crate::uint16::*;
@@ -1461,7 +1470,7 @@ impl FlagSet {
                 if inner.Len() == 0 {
                     return (slice::<string>::from(nil), nil.into());
                 }
-                read_as_csv(inner)
+                readAsCSV(inner)
             }
         }
     }
@@ -1524,7 +1533,7 @@ impl FlagSet {
                 if inner.Len() == 0 {
                     return (slice::<string>::from(nil), nil.into());
                 }
-                read_as_csv(inner)
+                readAsCSV(inner)
             }
         }
     }
@@ -1634,7 +1643,8 @@ fn unquote_usage(flag: &Flag) -> (string, string) {
 
 // ── CSV helpers ────────────────────────────────────────────────────────────
 
-fn read_as_csv(val: string) -> (slice<string>, error) {
+// go: github.com/spf13/pflag@v1.0.10 string_slice.go:22-29 readAsCSV
+pub fn readAsCSV(val: string) -> (slice<string>, error) {
     if val.Len() == 0 {
         return (slice::<string>::from(nil), nil.into());
     }
@@ -1642,9 +1652,11 @@ fn read_as_csv(val: string) -> (slice<string>, error) {
     csv::NewReader(reader).Read()
 }
 
-fn write_as_csv(vals: slice<string>) -> string {
+// go: github.com/spf13/pflag@v1.0.10 string_slice.go:31-40 writeAsCSV
+/// Go returns (string, error); the port previously dropped the error.
+pub fn writeAsCSV(vals: slice<string>) -> (string, error) {
     if vals.Len() == 0 {
-        return string("");
+        return (string(""), nil.into());
     }
     let mut result = string("");
     let mut i = 0usize;
@@ -1661,7 +1673,7 @@ fn write_as_csv(vals: slice<string>) -> string {
         }
         i += 1;
     }
-    result
+    (result, nil.into())
 }
 
 // ── Value implementations ──────────────────────────────────────────────────
@@ -2001,11 +2013,11 @@ impl Value for stringSliceValue {
     }
     fn String(&self) -> string {
         let vals = unsafe { (*self.ptr).clone() };
-        let csv_str = write_as_csv(vals);
+        let (csv_str, _) = writeAsCSV(vals);
         ("[") + (csv_str) + ("]")
     }
     fn Set_str(&mut self, s: string) -> error {
-        let (v, err) = read_as_csv(s);
+        let (v, err) = readAsCSV(s);
         if err != nil {
             return err;
         }
@@ -2045,7 +2057,7 @@ impl Value for stringArrayValue {
     }
     fn String(&self) -> string {
         let vals = unsafe { (*self.ptr).clone() };
-        let csv_str = write_as_csv(vals);
+        let (csv_str, _) = writeAsCSV(vals);
         ("[") + (csv_str) + ("]")
     }
     fn Set_str(&mut self, s: string) -> error {

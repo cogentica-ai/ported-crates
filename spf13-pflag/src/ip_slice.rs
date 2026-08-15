@@ -89,7 +89,7 @@ impl Value for ipSliceValue {
         for i in 0..v.Len() {
             ip_str_slice[i] = v[i].String();
         }
-        let out = write_as_csv(ip_str_slice);
+        let (out, _) = writeAsCSV(ip_str_slice);
         return string("[") + out + string("]");
     }
 
@@ -100,7 +100,7 @@ impl Value for ipSliceValue {
             string("'"), string(""),
             string("`"), string(""),
         }));
-        let (ip_str_slice, err) = read_as_csv(rm_quote.Replace(val));
+        let (ip_str_slice, err) = readAsCSV(rm_quote.Replace(val));
         if err != nil && !errors::Is(err.clone(), io::EOF) {
             return err;
         }

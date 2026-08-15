@@ -48,7 +48,7 @@ impl Value for stringToStringValue {
             let v = m.Get(k.clone()).0;
             records = append!(records, k + string("=") + v);
         }
-        let out = write_as_csv(records);
+        let (out, _) = writeAsCSV(records);
         return string("[") + strings::TrimSpace(out) + string("]");
     }
 
@@ -65,7 +65,7 @@ impl Value for stringToStringValue {
         } else if n == 1 {
             ss = append!(ss, strings::Trim(val.clone(), string("\"")));
         } else {
-            let (parsed, err) = read_as_csv(val.clone());
+            let (parsed, err) = readAsCSV(val.clone());
             if err != nil && !errors::Is(err.clone(), io::EOF) {
                 return err;
             }
@@ -108,7 +108,7 @@ pub fn stringToStringConv(val: string) -> (goish::goany::Any, error) {
         let empty: map<string, string> = map::new();
         return (goish::goany::Any::new(empty), nil.into());
     }
-    let (ss, err) = read_as_csv(val);
+    let (ss, err) = readAsCSV(val);
     if err != nil && !errors::Is(err.clone(), io::EOF) {
         return (goish::goany::Any::from(nil), err);
     }

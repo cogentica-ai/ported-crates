@@ -88,7 +88,7 @@ impl Value for boolSliceValue {
         for i in 0..v.Len() {
             bool_str_slice[i] = strconv::FormatBool(v[i]);
         }
-        let out = write_as_csv(bool_str_slice);
+        let (out, _) = writeAsCSV(bool_str_slice);
         return string("[") + out + string("]");
     }
 
@@ -104,7 +104,7 @@ impl Value for boolSliceValue {
             string("'"), string(""),
             string("`"), string(""),
         }));
-        let (bool_str_slice, err) = read_as_csv(rm_quote.Replace(val));
+        let (bool_str_slice, err) = readAsCSV(rm_quote.Replace(val));
         if err != nil && !errors::Is(err.clone(), io::EOF) {
             return err;
         }

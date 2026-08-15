@@ -36,7 +36,7 @@ impl Value for ipNetSliceValue {
         for i in 0..v.Len() {
             s[i] = v[i].String();
         }
-        let out = write_as_csv(s);
+        let (out, _) = writeAsCSV(s);
         return string("[") + out + string("]");
     }
 
@@ -47,7 +47,7 @@ impl Value for ipNetSliceValue {
             string("'"), string(""),
             string("`"), string(""),
         }));
-        let (str_slice, err) = read_as_csv(rm_quote.Replace(val));
+        let (str_slice, err) = readAsCSV(rm_quote.Replace(val));
         if err != nil && !errors::Is(err.clone(), io::EOF) {
             return err;
         }

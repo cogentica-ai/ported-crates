@@ -52,6 +52,7 @@ fn main() {
         ("TestIPAndIPNet", test_ip_and_ipnet),
         ("TestIPMaskBothForms", test_ipmask_both_forms),
         ("TestIPSlices", test_ip_slices),
+        ("TestFuncAndBoolFunc", test_func_and_boolfunc),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -844,5 +845,44 @@ fn test_ip_slices(t: &mut testing::T) {
                    string("a"), goish::make!([]goish::net::IP, 0), string("x"));
     if fs2.Parse(slice!([]string { string("--a=1.2.3.4,nope") })) == nil {
         t.Fatal(fmt::Sprintf!("a malformed member must fail the flag"));
+    }
+}
+
+/// func/boolfunc flags call a callback instead of storing. boolfunc sets
+/// NoOptDefVal so `--name` with NO value fires it; without that the bare
+/// form would be a parse error.
+fn test_func_and_boolfunc(t: &mut testing::T) {
+    use alloc::sync::Arc;
+    let seen = Arc::new(goish::sync::Mutex::new(goish::string::new()));
+    let hits = Arc::new(goish::sync::Mutex::new(0i64));
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    {
+        let seen = seen.clone();
+        fs.Func(string("f"), string("a func flag"), move |v| {
+            *seen.Lock() = v;
+            nil.into()
+        });
+    }
+    {
+        let hits = hits.clone();
+        fs.BoolFunc(string("b"), string("a boolfunc flag"), move |_v| {
+            *hits.Lock() += 1;
+            nil.into()
+        });
+    }
+    if fs.Parse(slice!([]string { string("--f=hello"), string("--b") })) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if (*seen.Lock()).clone() != "hello" {
+        t.Fatal(fmt::Sprintf!("func callback got %q, want hello", (*seen.Lock()).clone()));
+    }
+    if *hits.Lock() != 1 {
+        t.Fatal(fmt::Sprintf!("boolfunc fired %d times, want 1", *hits.Lock()));
+    }
+    // A callback returning an error must surface through Parse.
+    let mut fs2 = NewFlagSet("t2", ContinueOnError);
+    fs2.Func(string("e"), string("x"), |_v| goish::errors::New(string("nope")));
+    if fs2.Parse(slice!([]string { string("--e=1") })) == nil {
+        t.Fatal(fmt::Sprintf!("a callback error must surface"));
     }
 }
