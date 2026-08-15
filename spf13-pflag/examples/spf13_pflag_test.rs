@@ -49,6 +49,7 @@ fn main() {
         ("TestStringToInt", test_string_to_int),
         ("TestStringToStringComma", test_string_to_string_comma),
         ("TestBytesHexAndBase64", test_bytes_hex_and_base64),
+        ("TestIPAndIPNet", test_ip_and_ipnet),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -735,5 +736,43 @@ fn test_bytes_hex_and_base64(t: &mut testing::T) {
     let (got, err) = fs.GetBytesHex("h");
     if err != nil || got.Len() != 4 {
         t.Fatal(fmt::Sprintf!("GetBytesHex err=%v", err));
+    }
+}
+
+/// ipNet keeps ParseCIDR's SECOND return — the masked network — so
+/// `--n=10.1.2.3/8` stores 10.0.0.0/8, not the address given. Also pins
+/// that an EMPTY ip value is accepted (Go returns nil from Set) while a
+/// malformed one is rejected.
+fn test_ip_and_ipnet(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut ip: goish::net::IP = Default::default();
+    let mut n: goish::net::IPNet = Default::default();
+    fs.IPVar(&mut ip as *mut goish::net::IP, string("addr"),
+             Default::default(), string("an address"));
+    fs.IPNetVar(&mut n as *mut goish::net::IPNet, string("net"),
+                Default::default(), string("a network"));
+    if fs.Parse(slice!([]string { string("--addr=10.1.2.3"), string("--net=10.1.2.3/8") })) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if ip.String() != "10.1.2.3" {
+        t.Fatal(fmt::Sprintf!("ip = %s, want 10.1.2.3", ip.String()));
+    }
+    if n.String() != "10.0.0.0/8" {
+        t.Fatal(fmt::Sprintf!("ipnet = %s, want 10.0.0.0/8 (masked)", n.String()));
+    }
+    let (gotip, err) = fs.GetIP("addr");
+    if err != nil || gotip.String() != "10.1.2.3" {
+        t.Fatal(fmt::Sprintf!("GetIP err=%v", err));
+    }
+    let (gotnet, err2) = fs.GetIPNet("net");
+    if err2 != nil || gotnet.String() != "10.0.0.0/8" {
+        t.Fatal(fmt::Sprintf!("GetIPNet err=%v", err2));
+    }
+    // A malformed address must fail; an empty one must not.
+    let mut fs2 = NewFlagSet("t2", ContinueOnError);
+    let mut ip2: goish::net::IP = Default::default();
+    fs2.IPVar(&mut ip2 as *mut goish::net::IP, string("a"), Default::default(), string("x"));
+    if fs2.Parse(slice!([]string { string("--a=notanip") })) == nil {
+        t.Fatal(fmt::Sprintf!("a malformed IP must be rejected"));
     }
 }

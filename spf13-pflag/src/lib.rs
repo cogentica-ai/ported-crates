@@ -35,6 +35,8 @@ mod string_to_int64;
 mod string_to_string;
 #[path = "bytes.rs"]
 mod bytes_flag;
+mod ip;
+mod ipnet;
 mod int8;
 mod uint_slice;
 mod uint16;
@@ -64,6 +66,8 @@ pub use crate::string_to_int::*;
 pub use crate::string_to_int64::*;
 pub use crate::string_to_string::*;
 pub use crate::bytes_flag::*;
+pub use crate::ip::*;
+pub use crate::ipnet::*;
 pub use crate::int8::*;
 pub use crate::uint_slice::*;
 pub use crate::uint16::*;
