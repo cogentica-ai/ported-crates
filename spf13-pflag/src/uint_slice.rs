@@ -6,6 +6,11 @@
 use crate::*;
 use goish::types::uint;
 
+// Base TEN here, where every scalar file (uint8.go and friends) uses
+// base 0. Base 0 auto-detects a `0x`/`0o`/`0b` prefix, so lifting the
+// scalar spelling into this file would ACCEPT `--ports=0x10` as 16 —
+// input Go's uintSlice rejects outright. Upstream's asymmetry, kept.
+
 // go: github.com/spf13/pflag@v1.0.10 uint_slice.go:10-13 uintSliceValue
 pub struct uintSliceValue {
     value: *mut slice<uint>,
