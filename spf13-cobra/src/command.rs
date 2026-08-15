@@ -2157,3 +2157,48 @@ impl Command {
         return string::from_bytes(defaultVersionTemplate.as_bytes());
     }
 }
+
+// ── command.go's flag plumbing ─────────────────────────────────────────
+
+impl Command {
+    // go: github.com/spf13/cobra@v1.10.2 command.go:338-340 Command.SetHelpCommand
+    pub fn SetHelpCommand(&mut self, cmd: *mut Command) {
+        self.helpCommand = cmd;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1787-1798 Command.ResetFlags
+    /// Go also resets flagErrorBuf, which this port does not carry (the
+    /// ported pflag writes warnings directly) — the flag sets themselves
+    /// are rebuilt identically, and the three caches are dropped so they
+    /// rebuild on next use.
+    pub fn ResetFlags(&mut self) {
+        let name = self.DisplayName();
+        self.flags = Some(alloc::boxed::Box::new(
+            flag::NewFlagSet(name.clone(), flag::ContinueOnError)));
+        self.pflags = Some(alloc::boxed::Box::new(
+            flag::NewFlagSet(name, flag::ContinueOnError)));
+        self.lflags = None;
+        self.iflags = None;
+        self.parentsPflags = None;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1844-1852 Command.Flag
+    /// Local flags first, then the persistent ones — a local flag of the
+    /// same name shadows an inherited one, which is the whole point of
+    /// the two-step lookup.
+    pub fn Flag(&mut self, name: string) -> Option<&flag::Flag> {
+        if self.Flags().Lookup(name.clone()).is_some() {
+            return self.Flags().Lookup(name);
+        }
+        return self.persistentFlag(name);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1855-1865 Command.persistentFlag
+    pub fn persistentFlag(&mut self, name: string) -> Option<&flag::Flag> {
+        if self.HasPersistentFlags() && self.PersistentFlags().Lookup(name.clone()).is_some() {
+            return self.PersistentFlags().Lookup(name);
+        }
+        self.updateParentsPflags();
+        return self.parentsPflags.as_ref().and_then(|p| p.Lookup(name));
+    }
+}
