@@ -50,6 +50,7 @@ fn main() {
         ("TestStringToStringComma", test_string_to_string_comma),
         ("TestBytesHexAndBase64", test_bytes_hex_and_base64),
         ("TestIPAndIPNet", test_ip_and_ipnet),
+        ("TestIPMaskBothForms", test_ipmask_both_forms),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -774,5 +775,36 @@ fn test_ip_and_ipnet(t: &mut testing::T) {
     fs2.IPVar(&mut ip2 as *mut goish::net::IP, string("a"), Default::default(), string("x"));
     if fs2.Parse(slice!([]string { string("--a=notanip") })) == nil {
         t.Fatal(fmt::Sprintf!("a malformed IP must be rejected"));
+    }
+}
+
+/// ParseIPv4Mask accepts BOTH the dotted form and the 8-hex-digit form
+/// that IPMask.String() emits. The hex branch is the one Go calls a
+/// "horrible parser"; nothing else exercises it.
+fn test_ipmask_both_forms(t: &mut testing::T) {
+    let dotted = spf13_pflag::ParseIPv4Mask(string("255.255.255.0"));
+    if dotted.String() != "ffffff00" {
+        t.Fatal(fmt::Sprintf!("dotted form -> %s, want ffffff00", dotted.String()));
+    }
+    let hex = spf13_pflag::ParseIPv4Mask(string("ffffff00"));
+    if hex.String() != "ffffff00" {
+        t.Fatal(fmt::Sprintf!("hex form -> %s, want ffffff00", hex.String()));
+    }
+    // Wrong length and non-hex must both yield the nil mask.
+    if spf13_pflag::ParseIPv4Mask(string("fff")).bytes.Len() != 0 {
+        t.Fatal(fmt::Sprintf!("a short string must not parse"));
+    }
+    if spf13_pflag::ParseIPv4Mask(string("zzzzzzzz")).bytes.Len() != 0 {
+        t.Fatal(fmt::Sprintf!("a non-hex string must not parse"));
+    }
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut m: goish::net::IPMask = Default::default();
+    fs.IPMaskVar(&mut m as *mut goish::net::IPMask, string("m"),
+                 Default::default(), string("a mask"));
+    if fs.Parse(slice!([]string { string("--m=255.255.0.0") })) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if m.String() != "ffff0000" {
+        t.Fatal(fmt::Sprintf!("mask = %s, want ffff0000", m.String()));
     }
 }
