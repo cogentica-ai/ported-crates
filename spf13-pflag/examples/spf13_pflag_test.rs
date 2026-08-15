@@ -44,6 +44,8 @@ fn main() {
         ("TestInt64SliceFlag", test_int64_slice_flag),
         ("TestSliceReplaceThenAppend", test_slice_replace_then_append),
         ("TestSliceValueIface", test_slicevalue_iface),
+        ("TestBoolSliceQuotes", test_bool_slice_quotes),
+        ("TestDurationSlice", test_duration_slice),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -624,5 +626,35 @@ fn test_slicevalue_iface(t: &mut testing::T) {
     }
     if v.Append(string("notanumber")) == nil {
         t.Fatal(fmt::Sprintf!("Append must reject a non-numeric value"));
+    }
+}
+
+/// bool_slice is the only slice file that strips quotes before parsing.
+/// A plain comma-split would take `"true"` literally and fail ParseBool.
+fn test_bool_slice_quotes(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::goslice::slice<bool> = goish::make!([]bool, 0);
+    fs.BoolSliceVar(&mut val as *mut goish::goslice::slice<bool>,
+                    string("bs"), goish::make!([]bool, 0), string("bools"));
+    let args = slice!([]string { string("--bs=\"true\", 'false'") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed on quoted input"));
+    }
+    if val.Len() != 2 || val[0] != true || val[1] != false {
+        t.Fatal(fmt::Sprintf!("want [true,false], got len %d", val.Len() as i64));
+    }
+}
+
+fn test_duration_slice(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::goslice::slice<time::Duration> = goish::make!([]time::Duration, 0);
+    fs.DurationSliceVar(&mut val as *mut goish::goslice::slice<time::Duration>,
+                        string("d"), goish::make!([]time::Duration, 0), string("durations"));
+    let args = slice!([]string { string("--d"), string("1s,2m") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val.Len() != 2 || val[0] != time::Second || val[1] != time::Duration(120_000_000_000) {
+        t.Fatal(fmt::Sprintf!("want [1s,2m], got len %d", val.Len() as i64));
     }
 }
