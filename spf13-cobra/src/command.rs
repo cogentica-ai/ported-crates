@@ -1128,7 +1128,7 @@ impl Command {
                 self.Flags()
                     .BoolP(string("version"), string("v"), false, usage);
             } else {
-                self.Flags().Bool_flag(string("version"), false, usage);
+                self.Flags().Bool(string("version"), false, usage);
             }
             let _ = self.Flags().SetAnnotation(
                 "version",
@@ -1901,4 +1901,69 @@ pub(crate) fn defaultVersionFunc(w: &mut dyn io::Writer, c: &mut Command) -> err
         w.Write(bytes(s))
     };
     err
+}
+
+// ── command.go's non-template core ─────────────────────────────────────
+//
+// Added as a group: these need no text/template, which goish does not
+// have. The three Set*Template setters DO store the template text (Go
+// wraps it with tmpl(), whose rendering closure is the part that needs
+// text/template); the getters return that text with Go's parent
+// fallback, so the accessor contract is whole even though this port
+// renders help natively rather than through a template engine.
+
+impl Command {
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1445-1447 Command.Printf
+    pub fn Printf(&mut self, s: string) {
+        self.Print(s);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1460-1462 Command.PrintErrf
+    pub fn PrintErrf(&mut self, s: string) {
+        self.PrintErr(s);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1317-1322 Command.ResetCommands
+    pub fn ResetCommands(&mut self) {
+        self.parent = core::ptr::null_mut();
+        self.commands = alloc::vec::Vec::new();
+        self.helpCommand = core::ptr::null_mut();
+        self.parentsPflags = None;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1401-1432 Command.RemoveCommand
+    /// Go compares by POINTER identity (`command == cmd`) and clears the
+    /// removed child's parent link, then recomputes the three padding
+    /// widths. Matching by name instead would drop the wrong child when
+    /// two share a Use string.
+    pub fn RemoveCommand(&mut self, cmds: &[*const Command]) {
+        let mut kept: alloc::vec::Vec<alloc::boxed::Box<Command>> = alloc::vec::Vec::new();
+        for mut command in self.commands.drain(..) {
+            let ptr = command.as_ref() as *const Command;
+            if cmds.iter().any(|c| core::ptr::eq(*c, ptr)) {
+                command.parent = core::ptr::null_mut();
+                continue;
+            }
+            kept.push(command);
+        }
+        self.commands = kept;
+        // Go: "recompute all lengths"
+        self.commandsMaxUseLen = 0;
+        self.commandsMaxCommandPathLen = 0;
+        self.commandsMaxNameLen = 0;
+        for i in 0..self.commands.len() {
+            let usage_len = self.commands[i].Use.Len();
+            if usage_len > self.commandsMaxUseLen {
+                self.commandsMaxUseLen = usage_len;
+            }
+            let path_len = self.commands[i].CommandPath().Len();
+            if path_len > self.commandsMaxCommandPathLen {
+                self.commandsMaxCommandPathLen = path_len;
+            }
+            let name_len = self.commands[i].Name().Len();
+            if name_len > self.commandsMaxNameLen {
+                self.commandsMaxNameLen = name_len;
+            }
+        }
+    }
 }
