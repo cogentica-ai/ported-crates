@@ -63,10 +63,10 @@ pub(crate) const helpCommandName: &str = "help";
 // ported; completion machinery is not.
 pub type Completion = string;
 
-// go: command.go:42 (FParseErrWhitelist)
+// go: github.com/spf13/cobra@v1.10.2 command.go:42-42 FParseErrWhitelist
 pub type FParseErrWhitelist = flag::ParseErrorsAllowlist;
 
-// go: command.go:45 (Group)
+// go: github.com/spf13/cobra@v1.10.2 command.go:45-48 Group
 #[derive(Clone, Default)]
 pub struct Group {
     pub ID: string,
@@ -102,7 +102,7 @@ impl io::Writer for cmdWriter {
     }
 }
 
-// go: command.go:213 (commandCalledAs)
+// go: github.com/spf13/cobra@v1.10.2 command.go:213-269 commandCalledAs
 #[derive(Clone, Default)]
 pub struct commandCalledAs {
     pub name: string,
@@ -303,7 +303,7 @@ impl Default for Command {
 }
 
 impl Command {
-    // go: command.go:281 (SetArgs)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:281-283 SetArgs
     pub fn SetArgs(&mut self, a: slice<string>) {
         self.args = a;
     }
@@ -314,32 +314,32 @@ impl Command {
         self.errWriter = output;
     }
 
-    // go: command.go:296 (SetOut)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:296-298 SetOut
     pub fn SetOut(&mut self, newOut: Option<SharedBuf>) {
         self.outWriter = newOut;
     }
 
-    // go: command.go:302 (SetErr)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:302-304 SetErr
     pub fn SetErr(&mut self, newErr: Option<SharedBuf>) {
         self.errWriter = newErr;
     }
 
-    // go: command.go:313 (SetUsageFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:313-315 SetUsageFunc
     pub fn SetUsageFunc(&mut self, f: UsageFn) {
         self.usageFunc = Some(f);
     }
 
-    // go: command.go:328 (SetFlagErrorFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:328-330 SetFlagErrorFunc
     pub fn SetFlagErrorFunc(&mut self, f: FlagErrorFn) {
         self.flagErrorFunc = Some(f);
     }
 
-    // go: command.go:333 (SetHelpFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:333-335 SetHelpFunc
     pub fn SetHelpFunc(&mut self, f: HelpFn) {
         self.helpFunc = Some(f);
     }
 
-    // go: command.go:343 (SetHelpCommandGroupID)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:343-349 SetHelpCommandGroupID
     pub fn SetHelpCommandGroupID<S: Into<string>>(&mut self, groupID: S) {
         let groupID = groupID.into();
         if !self.helpCommand.is_null() {
@@ -351,27 +351,27 @@ impl Command {
         self.helpCommandGroupID = groupID;
     }
 
-    // go: command.go:376 (SetErrPrefix)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:376-378 SetErrPrefix
     pub fn SetErrPrefix<S: Into<string>>(&mut self, s: S) {
         self.errPrefix = s.into();
     }
 
-    // go: command.go:393 (OutOrStdout)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:393-395 OutOrStdout
     pub fn OutOrStdout(&self) -> cmdWriter {
         self.getOut(cmdWriter::Std(os::Stdout()))
     }
 
-    // go: command.go:398 (OutOrStderr)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:398-400 OutOrStderr
     pub fn OutOrStderr(&self) -> cmdWriter {
         self.getOut(cmdWriter::Std(os::Stderr()))
     }
 
-    // go: command.go:403 (ErrOrStderr)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:403-405 ErrOrStderr
     pub fn ErrOrStderr(&self) -> cmdWriter {
         self.getErr(cmdWriter::Std(os::Stderr()))
     }
 
-    // go: command.go:412 (getOut)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:412-420 getOut
     fn getOut(&self, def: cmdWriter) -> cmdWriter {
         if let Some(w) = &self.outWriter {
             return cmdWriter::Buf(w.clone());
@@ -382,7 +382,7 @@ impl Command {
         def
     }
 
-    // go: command.go:422 (getErr)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:422-430 getErr
     fn getErr(&self, def: cmdWriter) -> cmdWriter {
         if let Some(w) = &self.errWriter {
             return cmdWriter::Buf(w.clone());
@@ -393,7 +393,7 @@ impl Command {
         def
     }
 
-    // go: command.go:444 (UsageFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:444-460 UsageFunc
     pub fn UsageFunc(&mut self) -> UsageFn {
         if let Some(f) = &self.usageFunc {
             return f.clone();
@@ -414,13 +414,13 @@ impl Command {
         })
     }
 
-    // go: command.go:478 (Usage)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:478-480 Usage
     pub fn Usage(&mut self) -> error {
         let f = self.UsageFunc();
         f(self)
     }
 
-    // go: command.go:484 (HelpFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:484-501 HelpFunc
     pub fn HelpFunc(&mut self) -> HelpFn {
         if let Some(f) = &self.helpFunc {
             return f.clone();
@@ -442,14 +442,14 @@ impl Command {
         })
     }
 
-    // go: command.go:520 (Help)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:520-523 Help
     pub fn Help(&mut self) -> error {
         let f = self.HelpFunc();
         f(self, make!([]string, 0));
         nil.into()
     }
 
-    // go: command.go:526 (UsageString)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:526-542 UsageString
     pub fn UsageString(&mut self) -> string {
         // Storing normal writers
         let tmpOutput = self.outWriter.clone();
@@ -469,7 +469,7 @@ impl Command {
         s
     }
 
-    // go: command.go:547 (FlagErrorFunc)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:547-558 FlagErrorFunc
     pub fn FlagErrorFunc(&mut self) -> FlagErrorFn {
         if let Some(f) = &self.flagErrorFunc {
             return f.clone();
@@ -480,7 +480,7 @@ impl Command {
         alloc::sync::Arc::new(|_c: &mut Command, err: error| -> error { err })
     }
 
-    // go: command.go:563 (UsagePadding)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:563-568 UsagePadding
     pub fn UsagePadding(&self) -> int {
         if self.parent.is_null() || minUsagePadding > unsafe { (*self.parent).commandsMaxUseLen } {
             return minUsagePadding;
@@ -488,7 +488,7 @@ impl Command {
         unsafe { (*self.parent).commandsMaxUseLen }
     }
 
-    // go: command.go:573 (CommandPathPadding)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:573-578 CommandPathPadding
     pub fn CommandPathPadding(&self) -> int {
         if self.parent.is_null()
             || minCommandPathPadding > unsafe { (*self.parent).commandsMaxCommandPathLen }
@@ -498,7 +498,7 @@ impl Command {
         unsafe { (*self.parent).commandsMaxCommandPathLen }
     }
 
-    // go: command.go:583 (NamePadding)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:583-588 NamePadding
     pub fn NamePadding(&self) -> int {
         if self.parent.is_null() || minNamePadding > unsafe { (*self.parent).commandsMaxNameLen } {
             return minNamePadding;
@@ -506,7 +506,7 @@ impl Command {
         unsafe { (*self.parent).commandsMaxNameLen }
     }
 
-    // go: command.go:643 (ErrPrefix)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:643-652 ErrPrefix
     pub fn ErrPrefix(&self) -> string {
         if self.errPrefix != "" {
             return self.errPrefix.clone();
@@ -517,7 +517,7 @@ impl Command {
         string("Error:")
     }
 
-    // go: command.go:715 (argsMinusFirstX)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:715-748 argsMinusFirstX
     pub(crate) fn argsMinusFirstX(&mut self, args: slice<string>, x: string) -> slice<string> {
         if args.Len() == 0 {
             return args;
@@ -575,7 +575,7 @@ impl Command {
         (self as *mut Command, innerArgs)
     }
 
-    // go: command.go:757 (Find)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:757-779 Find
     pub fn Find(&mut self, args: slice<string>) -> (*mut Command, slice<string>, error) {
         let (commandFound, a) = self.innerfind(args);
         unsafe {
@@ -588,7 +588,7 @@ impl Command {
         (commandFound, a, nil.into())
     }
 
-    // go: command.go:781 (findSuggestions)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:781-796 findSuggestions
     pub(crate) fn findSuggestions<S: Into<string>>(&mut self, arg: S) -> string {
         let arg = arg.into();
         if self.DisableSuggestions {
@@ -608,7 +608,7 @@ impl Command {
         sb.String()
     }
 
-    // go: command.go:798 (findNext)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:798-817 findNext
     pub(crate) fn findNext<S: Into<string>>(&mut self, next: S) -> *mut Command {
         let next = next.into();
         let mut matches: alloc::vec::Vec<*mut Command> = alloc::vec::Vec::new();
@@ -631,7 +631,7 @@ impl Command {
         core::ptr::null_mut()
     }
 
-    // go: command.go:821 (Traverse)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:821-860 Traverse
     pub fn Traverse(&mut self, args: slice<string>) -> (*mut Command, slice<string>, error) {
         let mut flags: slice<string> = make!([]string, 0);
         let mut inFlag = false;
@@ -681,7 +681,7 @@ impl Command {
         (self as *mut Command, args, nil.into())
     }
 
-    // go: command.go:863 (SuggestionsFor)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:863-881 SuggestionsFor
     pub fn SuggestionsFor<S: Into<string>>(&self, typedName: S) -> slice<string> {
         let typedName = typedName.into();
         let mut suggestions: slice<string> = make!([]string, 0);
@@ -706,7 +706,7 @@ impl Command {
         suggestions
     }
 
-    // go: command.go:884 (VisitParents)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:884-889 VisitParents
     pub fn VisitParents(&mut self, fn_: &mut dyn FnMut(&mut Command)) {
         if self.HasParent() {
             let p = self.parent;
@@ -717,7 +717,7 @@ impl Command {
         }
     }
 
-    // go: command.go:892 (Root)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:892-897 Root
     pub fn Root(&mut self) -> *mut Command {
         if self.HasParent() {
             return unsafe { (*self.parent).Root() };
@@ -725,12 +725,12 @@ impl Command {
         self as *mut Command
     }
 
-    // go: command.go:901 (ArgsLenAtDash)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:901-903 ArgsLenAtDash
     pub fn ArgsLenAtDash(&mut self) -> int {
         self.Flags().ArgsLenAtDash()
     }
 
-    // go: command.go:905 (execute)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:905-1045 execute
     pub(crate) fn execute(&mut self, a: slice<string>) -> error {
         if self.Deprecated.Len() > 0 {
             self.Print(fmt::Sprintf!(
@@ -900,7 +900,7 @@ impl Command {
         nil.into()
     }
 
-    // go: command.go:1047 (preRun)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1047-1051 preRun
     fn preRun(&self) {
         let inits = initializers.Lock();
         for x in inits.iter() {
@@ -908,12 +908,12 @@ impl Command {
         }
     }
 
-    // go: command.go:1053 (postRun)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1053-1057 postRun
     fn postRun(&self) {
         postRunFinalizers();
     }
 
-    // go: command.go:1070 (Execute)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1070-1073 Execute
     pub fn Execute(&mut self) -> error {
         let (_, err) = self.ExecuteC();
         err
@@ -930,7 +930,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1084 (ExecuteC)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1084-1170 ExecuteC
     pub fn ExecuteC(&mut self) -> (*mut Command, error) {
         // go: command.go:1085 ctx — context not ported.
 
@@ -1030,7 +1030,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1172 (ValidateArgs)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1172-1177 ValidateArgs
     pub fn ValidateArgs(&mut self, args: slice<string>) -> error {
         if self.Args.is_none() {
             return ArbitraryArgs(self, args);
@@ -1039,7 +1039,7 @@ impl Command {
         f(self, args)
     }
 
-    // go: command.go:1180 (ValidateRequiredFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1180-1201 ValidateRequiredFlags
     pub fn ValidateRequiredFlags(&mut self) -> error {
         if self.DisableFlagParsing {
             return nil.into();
@@ -1069,7 +1069,7 @@ impl Command {
         nil.into()
     }
 
-    // go: command.go:1205 (checkCommandGroups)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1205-1214 checkCommandGroups
     pub(crate) fn checkCommandGroups(&mut self) {
         for i in 0..self.commands.len() {
             // if Group is not defined let the developer know right away
@@ -1089,7 +1089,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1219 (InitDefaultHelpFlag)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1219-1232 InitDefaultHelpFlag
     pub fn InitDefaultHelpFlag(&mut self) {
         self.mergePersistentFlags();
         if self.Flags().Lookup(helpFlagName).is_none() {
@@ -1110,7 +1110,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1238 (InitDefaultVersionFlag)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1238-1258 InitDefaultVersionFlag
     pub fn InitDefaultVersionFlag(&mut self) {
         if self.Version == "" {
             return;
@@ -1138,7 +1138,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1263 (InitDefaultHelpCmd)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1263-1314 InitDefaultHelpCmd
     pub fn InitDefaultHelpCmd(&mut self) {
         if !self.HasSubCommands() {
             return;
@@ -1195,7 +1195,7 @@ impl Command {
         &mut self.commands
     }
 
-    // go: command.go:1342 (AddCommand)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1342-1368 AddCommand
     // KNOWN DIVERGENCE: Go is variadic and takes *Command; the port takes one
     // Command by value per call (the "Command can't be a child of itself"
     // panic is unreachable under move semantics).
@@ -1220,12 +1220,12 @@ impl Command {
         self.commandsAreSorted = false;
     }
 
-    // go: command.go:1371 (Groups)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1371-1373 Groups
     pub fn Groups(&self) -> slice<Group> {
         self.commandgroups.clone()
     }
 
-    // go: command.go:1376 (AllChildCommandsHaveGroup)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1376-1383 AllChildCommandsHaveGroup
     pub fn AllChildCommandsHaveGroup(&self) -> bool {
         for sub in self.commands.iter() {
             let isHelp = (&**sub) as *const Command as *mut Command == self.helpCommand;
@@ -1236,7 +1236,7 @@ impl Command {
         true
     }
 
-    // go: command.go:1386 (ContainsGroup)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1386-1393 ContainsGroup
     pub fn ContainsGroup<S: Into<string>>(&self, groupID: S) -> bool {
         let groupID = groupID.into();
         for (_, x) in goish::range!(self.commandgroups.clone()) {
@@ -1247,13 +1247,13 @@ impl Command {
         false
     }
 
-    // go: command.go:1396 (AddGroup)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1396-1398 AddGroup
     // KNOWN DIVERGENCE: Go is variadic; the port takes one Group per call.
     pub fn AddGroup(&mut self, group: Group) {
         self.commandgroups = append!(self.commandgroups.clone(), group);
     }
 
-    // go: command.go:1435 (Print)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1435-1437 Print
     // KNOWN DIVERGENCE: the Print family takes one pre-formatted string
     // (Go is variadic over interface{}); internal call sites pre-format
     // with fmt::Sprintf!/Sprintln!.
@@ -1263,26 +1263,26 @@ impl Command {
         fmt::Fprintf!(w, "%s", s);
     }
 
-    // go: command.go:1440 (Println)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1440-1442 Println
     pub fn Println<S: Into<string>>(&mut self, i: S) {
         let s = i.into();
         self.Print(fmt::Sprintln!(s));
     }
 
-    // go: command.go:1450 (PrintErr)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1450-1452 PrintErr
     pub fn PrintErr<S: Into<string>>(&mut self, i: S) {
         let s = i.into();
         let mut w = self.ErrOrStderr();
         fmt::Fprintf!(w, "%s", s);
     }
 
-    // go: command.go:1455 (PrintErrln)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1455-1457 PrintErrln
     pub fn PrintErrln<S: Into<string>>(&mut self, i: S) {
         let s = i.into();
         self.PrintErr(fmt::Sprintln!(s));
     }
 
-    // go: command.go:1465 (CommandPath)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1465-1470 CommandPath
     pub fn CommandPath(&self) -> string {
         if self.HasParent() {
             return unsafe { (*self.parent).CommandPath() } + (" ") + (self.Name());
@@ -1290,7 +1290,7 @@ impl Command {
         self.DisplayName()
     }
 
-    // go: command.go:1474 (DisplayName)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1474-1479 DisplayName
     pub fn DisplayName(&self) -> string {
         let (displayName, ok) = self.Annotations.Get(string(CommandDisplayNameAnnotation));
         if ok {
@@ -1299,7 +1299,7 @@ impl Command {
         self.Name()
     }
 
-    // go: command.go:1482 (UseLine)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1482-1497 UseLine
     pub fn UseLine(&self) -> string {
         let mut useline: string;
         let use_ = strings::Replace(self.Use.clone(), self.Name(), self.DisplayName(), 1);
@@ -1327,7 +1327,7 @@ impl Command {
         }
     }
 
-    // go: command.go:1541 (Name)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1541-1548 Name
     pub fn Name(&self) -> string {
         let mut name = self.Use.clone();
         let i = strings::Index(name.clone(), " ");
@@ -1337,7 +1337,7 @@ impl Command {
         name
     }
 
-    // go: command.go:1551 (HasAlias)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1551-1558 HasAlias
     pub fn HasAlias<S: Into<string>>(&self, s: S) -> bool {
         let s = s.into();
         for (_, a) in goish::range!(self.Aliases.clone()) {
@@ -1348,7 +1348,7 @@ impl Command {
         false
     }
 
-    // go: command.go:1562 (CalledAs)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1562-1567 CalledAs
     pub fn CalledAs(&self) -> string {
         if self.commandCalledAs.called {
             return self.commandCalledAs.name.clone();
@@ -1356,7 +1356,7 @@ impl Command {
         string("")
     }
 
-    // go: command.go:1571 (hasNameOrAliasPrefix)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1571-1583 hasNameOrAliasPrefix
     pub(crate) fn hasNameOrAliasPrefix<S: Into<string>>(&mut self, prefix: S) -> bool {
         let prefix = prefix.into();
         if strings::HasPrefix(self.Name(), prefix.clone()) {
@@ -1372,7 +1372,7 @@ impl Command {
         false
     }
 
-    // go: command.go:1586 (NameAndAliases)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1586-1588 NameAndAliases
     pub fn NameAndAliases(&self) -> string {
         let mut list: slice<string> = make!([]string, 0);
         list = append!(list, self.Name());
@@ -1380,22 +1380,22 @@ impl Command {
         strings::Join(list, ", ")
     }
 
-    // go: command.go:1591 (HasExample)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1591-1593 HasExample
     pub fn HasExample(&self) -> bool {
         self.Example.Len() > 0
     }
 
-    // go: command.go:1596 (Runnable)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1596-1598 Runnable
     pub fn Runnable(&self) -> bool {
         self.Run.is_some() || self.RunE.is_some()
     }
 
-    // go: command.go:1601 (HasSubCommands)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1601-1603 HasSubCommands
     pub fn HasSubCommands(&self) -> bool {
         self.commands.len() > 0
     }
 
-    // go: command.go:1607 (IsAvailableCommand)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1607-1621 IsAvailableCommand
     pub fn IsAvailableCommand(&self) -> bool {
         if self.Deprecated.Len() != 0 || self.Hidden {
             return false;
@@ -1415,7 +1415,7 @@ impl Command {
         false
     }
 
-    // go: command.go:1628 (IsAdditionalHelpTopicCommand)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1628-1643 IsAdditionalHelpTopicCommand
     pub fn IsAdditionalHelpTopicCommand(&self) -> bool {
         // if a command is runnable, deprecated, or hidden it is not a 'help' command
         if self.Runnable() || self.Deprecated.Len() != 0 || self.Hidden {
@@ -1433,7 +1433,7 @@ impl Command {
         true
     }
 
-    // go: command.go:1648 (HasHelpSubCommands)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1648-1658 HasHelpSubCommands
     pub fn HasHelpSubCommands(&self) -> bool {
         // return true on the first found available 'help' sub command
         for sub in self.commands.iter() {
@@ -1446,7 +1446,7 @@ impl Command {
         false
     }
 
-    // go: command.go:1662 (HasAvailableSubCommands)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1662-1674 HasAvailableSubCommands
     pub fn HasAvailableSubCommands(&self) -> bool {
         // return true on the first found available (non deprecated/help/hidden)
         // sub command
@@ -1461,12 +1461,12 @@ impl Command {
         false
     }
 
-    // go: command.go:1677 (HasParent)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1677-1679 HasParent
     pub fn HasParent(&self) -> bool {
         !self.parent.is_null()
     }
 
-    // go: command.go:1688 (Flags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1688-1698 Flags
     pub fn Flags(&mut self) -> &mut flag::FlagSet {
         if self.flags.is_none() {
             let fs = flag::NewFlagSet(self.DisplayName(), flag::ContinueOnError);
@@ -1476,7 +1476,7 @@ impl Command {
         self.flags.as_mut().unwrap()
     }
 
-    // go: command.go:1702 (LocalNonPersistentFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1702-1712 LocalNonPersistentFlags
     pub fn LocalNonPersistentFlags(&mut self) -> flag::FlagSet {
         self.PersistentFlags();
 
@@ -1494,7 +1494,7 @@ impl Command {
         out
     }
 
-    // go: command.go:1716 (LocalFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1716-1740 LocalFlags
     pub fn LocalFlags(&mut self) -> &mut flag::FlagSet {
         self.mergePersistentFlags();
 
@@ -1529,7 +1529,7 @@ impl Command {
         self.lflags.as_mut().unwrap()
     }
 
-    // go: command.go:1744 (InheritedFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1744-1766 InheritedFlags
     pub fn InheritedFlags(&mut self) -> &mut flag::FlagSet {
         self.mergePersistentFlags();
 
@@ -1553,12 +1553,12 @@ impl Command {
         self.iflags.as_mut().unwrap()
     }
 
-    // go: command.go:1770 (NonInheritedFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1770-1772 NonInheritedFlags
     pub fn NonInheritedFlags(&mut self) -> &mut flag::FlagSet {
         self.LocalFlags()
     }
 
-    // go: command.go:1775 (PersistentFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1775-1784 PersistentFlags
     pub fn PersistentFlags(&mut self) -> &mut flag::FlagSet {
         if self.pflags.is_none() {
             let fs = flag::NewFlagSet(self.DisplayName(), flag::ContinueOnError);
@@ -1567,47 +1567,47 @@ impl Command {
         self.pflags.as_mut().unwrap()
     }
 
-    // go: command.go:1801 (HasFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1801-1803 HasFlags
     pub fn HasFlags(&mut self) -> bool {
         self.Flags().HasFlags()
     }
 
-    // go: command.go:1806 (HasPersistentFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1806-1808 HasPersistentFlags
     pub fn HasPersistentFlags(&mut self) -> bool {
         self.PersistentFlags().HasFlags()
     }
 
-    // go: command.go:1811 (HasLocalFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1811-1813 HasLocalFlags
     pub fn HasLocalFlags(&mut self) -> bool {
         self.LocalFlags().HasFlags()
     }
 
-    // go: command.go:1816 (HasInheritedFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1816-1818 HasInheritedFlags
     pub fn HasInheritedFlags(&mut self) -> bool {
         self.InheritedFlags().HasFlags()
     }
 
-    // go: command.go:1822 (HasAvailableFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1822-1824 HasAvailableFlags
     pub fn HasAvailableFlags(&mut self) -> bool {
         self.Flags().HasAvailableFlags()
     }
 
-    // go: command.go:1827 (HasAvailablePersistentFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1827-1829 HasAvailablePersistentFlags
     pub fn HasAvailablePersistentFlags(&mut self) -> bool {
         self.PersistentFlags().HasAvailableFlags()
     }
 
-    // go: command.go:1833 (HasAvailableLocalFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1833-1835 HasAvailableLocalFlags
     pub fn HasAvailableLocalFlags(&mut self) -> bool {
         self.LocalFlags().HasAvailableFlags()
     }
 
-    // go: command.go:1839 (HasAvailableInheritedFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1839-1841 HasAvailableInheritedFlags
     pub fn HasAvailableInheritedFlags(&mut self) -> bool {
         self.InheritedFlags().HasAvailableFlags()
     }
 
-    // go: command.go:1868 (ParseFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1868-1889 ParseFlags
     pub fn ParseFlags(&mut self, args: slice<string>) -> error {
         if self.DisableFlagParsing {
             return nil.into();
@@ -1624,12 +1624,12 @@ impl Command {
         err
     }
 
-    // go: command.go:1892 (Parent)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1892-1894 Parent
     pub fn Parent(&self) -> *mut Command {
         self.parent
     }
 
-    // go: command.go:1898 (mergePersistentFlags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1898-1902 mergePersistentFlags
     pub(crate) fn mergePersistentFlags(&mut self) {
         self.updateParentsPflags();
         self.PersistentFlags();
@@ -1641,7 +1641,7 @@ impl Command {
         self.parentsPflags = Some(parentsPflags);
     }
 
-    // go: command.go:1907 (updateParentsPflags)
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1907-1923 updateParentsPflags
     pub(crate) fn updateParentsPflags(&mut self) {
         if self.parentsPflags.is_none() {
             let mut fs = flag::NewFlagSet(self.DisplayName(), flag::ContinueOnError);
@@ -1673,7 +1673,7 @@ const minCommandPathPadding: int = 11;
 
 const minNamePadding: int = 11;
 
-// go: command.go:654 (hasNoOptDefVal)
+// go: github.com/spf13/cobra@v1.10.2 command.go:654-660 hasNoOptDefVal
 pub(crate) fn hasNoOptDefVal<S: Into<string>>(name: S, fs: &flag::FlagSet) -> bool {
     let name = name.into();
     match fs.Lookup(name) {
@@ -1682,7 +1682,7 @@ pub(crate) fn hasNoOptDefVal<S: Into<string>>(name: S, fs: &flag::FlagSet) -> bo
     }
 }
 
-// go: command.go:662 (shortHasNoOptDefVal)
+// go: github.com/spf13/cobra@v1.10.2 command.go:662-672 shortHasNoOptDefVal
 pub(crate) fn shortHasNoOptDefVal<S: Into<string>>(name: S, fs: &flag::FlagSet) -> bool {
     let name = name.into();
     if name.Len() == 0 {
@@ -1695,7 +1695,7 @@ pub(crate) fn shortHasNoOptDefVal<S: Into<string>>(name: S, fs: &flag::FlagSet) 
     }
 }
 
-// go: command.go:674 (stripFlags)
+// go: github.com/spf13/cobra@v1.10.2 command.go:674-710 stripFlags
 pub(crate) fn stripFlags(args: slice<string>, c: &mut Command) -> slice<string> {
     if args.Len() == 0 {
         return args;
@@ -1737,14 +1737,14 @@ pub(crate) fn stripFlags(args: slice<string>, c: &mut Command) -> slice<string> 
     commands
 }
 
-// go: command.go:750 (isFlagArg)
+// go: github.com/spf13/cobra@v1.10.2 command.go:750-753 isFlagArg
 pub(crate) fn isFlagArg<S: Into<string>>(arg: S) -> bool {
     let arg = arg.into();
     (arg.Len() >= 3 && arg.slice(0, 2) == "--")
         || (arg.Len() >= 2 && arg[0] == b'-' && arg[1] != b'-')
 }
 
-// go: command.go:1928 (commandNameMatches)
+// go: github.com/spf13/cobra@v1.10.2 command.go:1928-1934 commandNameMatches
 pub(crate) fn commandNameMatches<S1: Into<string>, S2: Into<string>>(s: S1, t: S2) -> bool {
     let s = s.into();
     let t = t.into();

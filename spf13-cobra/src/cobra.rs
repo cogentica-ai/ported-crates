@@ -39,34 +39,34 @@ pub const defaultTraverseRunHooks: bool = false;
 // for settable bool globals).
 pub static EnablePrefixMatching: AtomicBool = AtomicBool::new(defaultPrefixMatching);
 
-// go: cobra.go:59
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:59-59 EnableCommandSorting
 pub static EnableCommandSorting: AtomicBool = AtomicBool::new(defaultCommandSorting);
 
-// go: cobra.go:62
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:62-62 EnableCaseInsensitive
 pub static EnableCaseInsensitive: AtomicBool = AtomicBool::new(defaultCaseInsensitive);
 
-// go: cobra.go:66
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:66-66 EnableTraverseRunHooks
 pub static EnableTraverseRunHooks: AtomicBool = AtomicBool::new(defaultTraverseRunHooks);
 
-// go: cobra.go:99 (OnInitialize)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:99-101 OnInitialize
 // KNOWN DIVERGENCE: Go is variadic (y ...func()); call once per function.
 pub fn OnInitialize(y: alloc::sync::Arc<dyn Fn() + Send + Sync>) {
     initializers.Lock().push(y);
 }
 
-// go: cobra.go:105 (OnFinalize)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:105-107 OnFinalize
 // KNOWN DIVERGENCE: Go is variadic (y ...func()); call once per function.
 pub fn OnFinalize(y: alloc::sync::Arc<dyn Fn() + Send + Sync>) {
     finalizers.Lock().push(y);
 }
 
-// go: cobra.go:159 (trimRightSpace)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:159-161 trimRightSpace
 pub(crate) fn trimRightSpace<S: Into<string>>(s: S) -> string {
     let s = s.into();
     strings::TrimRightFunc(s, unicode::IsSpace)
 }
 
-// go: cobra.go:166 (appendIfNotPresent)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:166-171 appendIfNotPresent
 pub(crate) fn appendIfNotPresent<S1: Into<string>, S2: Into<string>>(
     s: S1,
     stringToAppend: S2,
@@ -79,7 +79,7 @@ pub(crate) fn appendIfNotPresent<S1: Into<string>, S2: Into<string>>(
     (s) + (" ") + (stringToAppend)
 }
 
-// go: cobra.go:174 (rpad)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:174-177 rpad
 pub(crate) fn rpad<S: Into<string>>(s: S, padding: int) -> string {
     let s = s.into();
     let formattedString = fmt::Sprintf!("%%-%ds", padding);
@@ -129,7 +129,7 @@ pub(crate) fn ld<S1: Into<string>, S2: Into<string>>(s: S1, t: S2, ignoreCase: b
     d[s.Len()][t.Len()]
 }
 
-// go: cobra.go:225 (stringInSlice)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:225-232 stringInSlice
 pub(crate) fn stringInSlice<S: Into<string>>(a: S, list: slice<string>) -> bool {
     let a = a.into();
     for (_, b) in goish::range!(list) {
@@ -140,7 +140,7 @@ pub(crate) fn stringInSlice<S: Into<string>>(a: S, list: slice<string>) -> bool 
     false
 }
 
-// go: cobra.go:235 (CheckErr)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:235-240 CheckErr
 // KNOWN DIVERGENCE: Go takes interface{}; the port takes error (the only
 // type cobra itself ever passes).
 pub fn CheckErr(msg: error) {
@@ -151,7 +151,7 @@ pub fn CheckErr(msg: error) {
     }
 }
 
-// go: cobra.go:243 (WriteStringAndCheck)
+// go: github.com/spf13/cobra@v1.10.2 cobra.go:243-246 WriteStringAndCheck
 // KNOWN DIVERGENCE: io.StringWriter narrowed to io::Writer (goish strings
 // and buffers implement Writer; write errors still route through CheckErr).
 pub fn WriteStringAndCheck<S: Into<string>>(b: &mut dyn io::Writer, s: S) {
