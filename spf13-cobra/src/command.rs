@@ -202,6 +202,15 @@ pub struct Command {
     // commandsAreSorted defines, if command slice are sorted or not.
     pub commandsAreSorted: bool,
     // commandCalledAs is the name or alias value used to call this command.
+    // go: none — backing for Context/SetContext (command.go:269-277).
+    pub ctx: Option<alloc::sync::Arc<dyn goish::context::Context + Send + Sync>>,
+    // go: none — backing for SetIn/getIn/InOrStdin (command.go:308-440).
+    // Go holds an io.Reader; the port records only WHETHER one was
+    // installed, because a Box<dyn io::Reader> cannot be handed back by
+    // value and cobra's own reads go through the shared buffers above.
+    pub inReader: bool,
+    // go: none — backing for SetCompletionCommandGroupID (command.go:352).
+    pub completionCommandGroupID: string,
     pub commandCalledAs: commandCalledAs,
 
     // commands is the list of commands supported by this program.
@@ -283,6 +292,9 @@ impl Default for Command {
             errWriter: None,
             FParseErrWhitelist: Default::default(),
             commandsAreSorted: false,
+            ctx: None,
+            inReader: false,
+            completionCommandGroupID: string(""),
             commandCalledAs: Default::default(),
             commands: alloc::vec::Vec::new(),
             parent: core::ptr::null_mut(),
@@ -1990,5 +2002,58 @@ impl<'a> commandSorterByName<'a> {
     // go: github.com/spf13/cobra@v1.10.2 command.go:1329-1329 commandSorterByName.Less
     pub fn Less(&self, i: int, j: int) -> bool {
         return self.0[i as usize].Name() < self.0[j as usize].Name();
+    }
+}
+
+// ── command.go's field-backed accessors ────────────────────────────────
+
+impl Command {
+    // go: github.com/spf13/cobra@v1.10.2 command.go:269-271 Command.Context
+    /// Go: the context set by SetContext, or the one ExecuteContext
+    /// installed. Nil until then, which is Option::None here.
+    pub fn Context(&self) -> Option<alloc::sync::Arc<dyn goish::context::Context + Send + Sync>> {
+        return self.ctx.clone();
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:275-277 Command.SetContext
+    pub fn SetContext(&mut self, ctx: alloc::sync::Arc<dyn goish::context::Context + Send + Sync>) {
+        self.ctx = Some(ctx);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:308-310 Command.SetIn
+    /// Go stores the io.Reader; the port records that one was installed —
+    /// see the inReader field note for why it cannot hold the reader.
+    pub fn SetIn(&mut self, has_in: bool) {
+        self.inReader = has_in;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:432-440 Command.getIn
+    /// Walks to the nearest ancestor with a reader installed, as Go does,
+    /// falling back to the caller's default.
+    pub fn getIn(&self, def: bool) -> bool {
+        if self.inReader {
+            return true;
+        }
+        if self.HasParent() {
+            return unsafe { (*self.parent).getIn(def) };
+        }
+        return def;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:408-410 Command.InOrStdin
+    /// Go defaults to os.Stdin; false here means "no override installed",
+    /// which is the same routing decision.
+    pub fn InOrStdin(&self) -> bool {
+        return self.getIn(false);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:352-355 Command.SetCompletionCommandGroupID
+    /// Go: "completionCommandGroupID is used if no completion command is
+    /// defined by the user". Set on the ROOT, not on the receiver.
+    pub fn SetCompletionCommandGroupID(&mut self, groupID: string) {
+        let root = self.Root() as *mut Command;
+        unsafe {
+            (*root).completionCommandGroupID = groupID;
+        }
     }
 }
