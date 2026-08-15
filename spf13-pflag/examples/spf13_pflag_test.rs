@@ -46,6 +46,8 @@ fn main() {
         ("TestSliceValueIface", test_slicevalue_iface),
         ("TestBoolSliceQuotes", test_bool_slice_quotes),
         ("TestDurationSlice", test_duration_slice),
+        ("TestStringToInt", test_string_to_int),
+        ("TestStringToStringComma", test_string_to_string_comma),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -656,5 +658,49 @@ fn test_duration_slice(t: &mut testing::T) {
     }
     if val.Len() != 2 || val[0] != time::Second || val[1] != time::Duration(120_000_000_000) {
         t.Fatal(fmt::Sprintf!("want [1s,2m], got len %d", val.Len() as i64));
+    }
+}
+
+fn test_string_to_int(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::gomap::map<goish::gostring::string, int> = goish::gomap::map::new();
+    fs.StringToIntVar(&mut val as *mut goish::gomap::map<goish::gostring::string, int>,
+                      string("m"), goish::gomap::map::new(), string("a map"));
+    let args = slice!([]string { string("--m=a=1,b=2") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val.Get(string("a")).0 != 1 || val.Get(string("b")).0 != 2 {
+        t.Fatal(fmt::Sprintf!("want a=1,b=2"));
+    }
+    let (got, err) = fs.GetStringToInt("m");
+    if err != nil || got.Get(string("b")).0 != 2 {
+        t.Fatal(fmt::Sprintf!("GetStringToInt err=%v", err));
+    }
+    // A pair without '=' must be rejected, not silently dropped.
+    let mut fs2 = NewFlagSet("t2", ContinueOnError);
+    let mut v2: goish::gomap::map<goish::gostring::string, int> = goish::gomap::map::new();
+    fs2.StringToIntVar(&mut v2 as *mut goish::gomap::map<goish::gostring::string, int>,
+                       string("m"), goish::gomap::map::new(), string("a map"));
+    if fs2.Parse(slice!([]string { string("--m=oops") })) == nil {
+        t.Fatal(fmt::Sprintf!("a value with no '=' must be an error"));
+    }
+}
+
+/// string_to_string takes a single pair WHOLE rather than splitting on
+/// commas, so a value may contain one. A comma-split would turn
+/// `--m=k=a,b` into a malformed second pair.
+fn test_string_to_string_comma(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::gomap::map<goish::gostring::string, goish::gostring::string> =
+        goish::gomap::map::new();
+    fs.StringToStringVar(
+        &mut val as *mut goish::gomap::map<goish::gostring::string, goish::gostring::string>,
+        string("m"), goish::gomap::map::new(), string("a map"));
+    if fs.Parse(slice!([]string { string("--m=key=a,b") })) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val.Get(string("key")).0 != "a,b" {
+        t.Fatal(fmt::Sprintf!("want key=\"a,b\", got %q", val.Get(string("key")).0));
     }
 }
