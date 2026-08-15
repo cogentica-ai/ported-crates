@@ -48,6 +48,7 @@ fn main() {
         ("TestDurationSlice", test_duration_slice),
         ("TestStringToInt", test_string_to_int),
         ("TestStringToStringComma", test_string_to_string_comma),
+        ("TestBytesHexAndBase64", test_bytes_hex_and_base64),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -702,5 +703,37 @@ fn test_string_to_string_comma(t: &mut testing::T) {
     }
     if val.Get(string("key")).0 != "a,b" {
         t.Fatal(fmt::Sprintf!("want key=\"a,b\", got %q", val.Get(string("key")).0));
+    }
+}
+
+/// Go renders bytesHex with %X — UPPERCASE. goish's hex::EncodeToString
+/// is lowercase, so the port upper-cases explicitly; this pins that, and
+/// the base64 round-trip alongside it.
+fn test_bytes_hex_and_base64(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut hexv: goish::goslice::slice<goish::types::byte> = goish::make!([]goish::types::byte, 0);
+    let mut b64v: goish::goslice::slice<goish::types::byte> = goish::make!([]goish::types::byte, 0);
+    fs.BytesHexVar(&mut hexv as *mut goish::goslice::slice<goish::types::byte>,
+                   string("h"), goish::make!([]goish::types::byte, 0), string("hex"));
+    fs.BytesBase64Var(&mut b64v as *mut goish::goslice::slice<goish::types::byte>,
+                      string("b"), goish::make!([]goish::types::byte, 0), string("b64"));
+    let args = slice!([]string { string("--h=deadBEEF"), string("--b=aGk=") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if hexv.Len() != 4 || hexv[0] != 0xde || hexv[3] != 0xef {
+        t.Fatal(fmt::Sprintf!("hex decode wrong, len %d", hexv.Len() as i64));
+    }
+    if b64v.Len() != 2 || b64v[0] != b'h' || b64v[1] != b'i' {
+        t.Fatal(fmt::Sprintf!("base64 decode wrong"));
+    }
+    // The flag's rendered value must come back UPPERCASE, as Go's %X does.
+    let f = fs.Lookup("h").unwrap();
+    if f.Value.String() != "DEADBEEF" {
+        t.Fatal(fmt::Sprintf!("hex String() = %q, want DEADBEEF", f.Value.String()));
+    }
+    let (got, err) = fs.GetBytesHex("h");
+    if err != nil || got.Len() != 4 {
+        t.Fatal(fmt::Sprintf!("GetBytesHex err=%v", err));
     }
 }
