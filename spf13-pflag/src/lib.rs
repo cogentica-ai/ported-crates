@@ -45,6 +45,9 @@ mod func_flag;
 mod bool_func;
 mod string_slice_pkg;
 mod string_array_pkg;
+#[path = "time_flag.rs"]
+mod time_flag;
+mod errors_pkg;
 mod int8;
 mod uint_slice;
 mod uint16;
@@ -83,6 +86,7 @@ pub use crate::func_flag::*;
 pub use crate::bool_func::*;
 pub use crate::string_slice_pkg::*;
 pub use crate::string_array_pkg::*;
+pub use crate::time_flag::*;
 pub use crate::int8::*;
 pub use crate::uint_slice::*;
 pub use crate::uint16::*;
@@ -134,6 +138,14 @@ pub struct ParseErrorsAllowlist {
 
 pub trait Value: Send + Sync {
     fn String(&self) -> string;
+
+    // go: none — Goish glue for Go's `flag.Value.(*timeValue)` type
+    // assertion in GetTime (time.go:70). Rust trait objects carry no
+    // downcast, so the one concrete Value that needs to be recovered
+    // whole answers here; every other Value keeps the default.
+    fn __as_time(&self) -> Option<time::Time> {
+        None
+    }
     fn Set_str(&mut self, s: string) -> error;
     fn Type(&self) -> string;
     // go: none — Goish glue. Go shares *Flag pointers across FlagSets
@@ -189,7 +201,7 @@ const flagUnknownFlagMessage: notExistErrorMessageType = 3;
 const flagUnknownShorthandFlagMessage: notExistErrorMessageType = 4;
 
 #[derive(Clone, Default)]
-struct NotExistError {
+pub struct NotExistError {
     name: string,
     specified_shorthands: string,
     message_type: notExistErrorMessageType,
@@ -212,7 +224,7 @@ impl ErrorTrait for NotExistError {
 }
 
 #[derive(Clone, Default)]
-struct ValueRequiredError {
+pub struct ValueRequiredError {
     flag_name: string,
     specified_name: string,
     specified_shorthands: string,
@@ -230,7 +242,7 @@ impl ErrorTrait for ValueRequiredError {
 }
 
 #[derive(Clone, Default)]
-struct InvalidValueError {
+pub struct InvalidValueError {
     flag_name: string,
     flag_shorthand: string,
     flag_shorthand_deprecated: string,
@@ -254,7 +266,7 @@ impl ErrorTrait for InvalidValueError {
 }
 
 #[derive(Clone, Default)]
-struct InvalidSyntaxError {
+pub struct InvalidSyntaxError {
     specified_flag: string,
 }
 
