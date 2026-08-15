@@ -18,6 +18,11 @@ mod float64_slice;
 mod int16;
 mod int32_slice;
 mod int64_slice;
+mod int_pkg;
+mod int32_pkg;
+mod int64_pkg;
+mod uint_pkg;
+mod float64_pkg;
 mod int8;
 mod uint_slice;
 mod uint16;
@@ -31,6 +36,11 @@ pub use crate::float64_slice::*;
 pub use crate::int16::*;
 pub use crate::int32_slice::*;
 pub use crate::int64_slice::*;
+pub use crate::int_pkg::*;
+pub use crate::int32_pkg::*;
+pub use crate::int64_pkg::*;
+pub use crate::uint_pkg::*;
+pub use crate::float64_pkg::*;
 pub use crate::int8::*;
 pub use crate::uint_slice::*;
 pub use crate::uint16::*;
@@ -970,7 +980,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Bool_flag(&mut self, name: string, value: bool, usage: string) -> *mut bool {
+    pub fn Bool(&mut self, name: string, value: bool, usage: string) -> *mut bool {
         self.BoolP(name, string(""), value, usage)
     }
 
@@ -1014,7 +1024,7 @@ impl FlagSet {
         p
     }
 
-    pub fn String_flag(&mut self, name: string, value: string, usage: string) -> *mut string {
+    pub fn String(&mut self, name: string, value: string, usage: string) -> *mut string {
         self.StringP(name, string(""), value, usage)
     }
 
@@ -1056,7 +1066,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Int_flag(&mut self, name: string, value: int, usage: string) -> *mut int {
+    pub fn Int(&mut self, name: string, value: int, usage: string) -> *mut int {
         self.IntP(name, string(""), value, usage)
     }
 
@@ -1099,7 +1109,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Int64_flag(&mut self, name: string, value: i64, usage: string) -> *mut i64 {
+    pub fn Int64(&mut self, name: string, value: i64, usage: string) -> *mut i64 {
         self.Int64P(name, string(""), value, usage)
     }
 
@@ -1142,7 +1152,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Int32_flag(&mut self, name: string, value: i32, usage: string) -> *mut i32 {
+    pub fn Int32(&mut self, name: string, value: i32, usage: string) -> *mut i32 {
         self.Int32P(name, string(""), value, usage)
     }
 
@@ -1185,7 +1195,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Uint_flag(&mut self, name: string, value: uint, usage: string) -> *mut uint {
+    pub fn Uint(&mut self, name: string, value: uint, usage: string) -> *mut uint {
         self.UintP(name, string(""), value, usage)
     }
 
@@ -1228,7 +1238,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Float64_flag(&mut self, name: string, value: float64, usage: string) -> *mut float64 {
+    pub fn Float64(&mut self, name: string, value: float64, usage: string) -> *mut float64 {
         self.Float64P(name, string(""), value, usage)
     }
 
@@ -1284,7 +1294,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Duration_flag(&mut self, name: string, value: time::Duration, usage: string) -> *mut time::Duration {
+    pub fn Duration(&mut self, name: string, value: time::Duration, usage: string) -> *mut time::Duration {
         self.DurationP(name, string(""), value, usage)
     }
 
@@ -1331,7 +1341,7 @@ impl FlagSet {
         p
     }
 
-    pub fn Count_flag(&mut self, name: string, usage: string) -> *mut int {
+    pub fn Count(&mut self, name: string, usage: string) -> *mut int {
         self.CountP(name, string(""), usage)
     }
 
@@ -1387,7 +1397,7 @@ impl FlagSet {
         p
     }
 
-    pub fn StringSlice_flag(&mut self, name: string, value: slice<string>, usage: string) -> *mut slice<string> {
+    pub fn StringSlice(&mut self, name: string, value: slice<string>, usage: string) -> *mut slice<string> {
         self.StringSliceP(name, string(""), value, usage)
     }
 
@@ -1450,7 +1460,7 @@ impl FlagSet {
         p
     }
 
-    pub fn StringArray_flag(&mut self, name: string, value: slice<string>, usage: string) -> *mut slice<string> {
+    pub fn StringArray(&mut self, name: string, value: slice<string>, usage: string) -> *mut slice<string> {
         self.StringArrayP(name, string(""), value, usage)
     }
 
