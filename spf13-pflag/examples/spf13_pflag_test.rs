@@ -10,14 +10,10 @@ use goish::{string};
 use goish::syscall;
 use goish::testing;
 use goish::fmt;
-use goish::{nil, strings, slice, int32, int};
-use goish::errors;
+use goish::{nil, slice, int32, int};
 use goish::time;
 use goish::types::{uint, float64};
-use spf13_pflag::{
-    NewFlagSet, ContinueOnError, ExitOnError, ErrHelp,
-    FlagSet,
-};
+use spf13_pflag::{NewFlagSet, ContinueOnError};
 
 #[goish::main]
 fn main() {

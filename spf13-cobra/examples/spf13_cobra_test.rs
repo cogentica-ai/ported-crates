@@ -14,7 +14,7 @@ use goish::syscall;
 use goish::testing;
 use goish::string;
 use goish::slice;
-use goish::{int32, make, nil};
+use goish::{int32, nil};
 
 use spf13_cobra as cobra;
 
