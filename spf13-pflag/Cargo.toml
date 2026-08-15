@@ -1,0 +1,17 @@
+[package]
+name = "spf13-pflag"
+version = "1.0.10"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+goish = { git = "https://github.com/cogentica-ai/goish", tag = "v1.0.0-alpha.1" }
+
+[profile.dev]
+panic = "abort"
+
+[[example]]
+name = "spf13_pflag_test"
+path = "examples/spf13_pflag_test.rs"

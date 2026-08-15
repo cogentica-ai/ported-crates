@@ -1,0 +1,12 @@
+# Only quality-controlled crates are tracked, nothing else. Every path
+# is ignored by default; unignore a crate here once it is ready to
+# publish.
+/*
+!/.gitignore
+!/spf13-cobra/
+!/spf13-pflag/
+
+# build output inside tracked crates
+target/
+Cargo.lock
+.memsearch/

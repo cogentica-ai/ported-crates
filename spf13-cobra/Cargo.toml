@@ -1,0 +1,18 @@
+[package]
+name = "spf13-cobra"
+version = "1.10.2"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+goish = { git = "https://github.com/cogentica-ai/goish", tag = "v1.0.0-alpha.1" }
+spf13-pflag = { path = "../spf13-pflag" }
+
+[profile.dev]
+panic = "abort"
+
+[[example]]
+name = "spf13_cobra_test"
+path = "examples/spf13_cobra_test.rs"
