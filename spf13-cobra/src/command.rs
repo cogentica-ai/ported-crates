@@ -211,6 +211,10 @@ pub struct Command {
     pub inReader: bool,
     // go: none — backing for SetCompletionCommandGroupID (command.go:352).
     pub completionCommandGroupID: string,
+    // go: none — backing for the three template accessors.
+    pub usageTemplate: Option<string>,
+    pub helpTemplate: Option<string>,
+    pub versionTemplate: Option<string>,
     pub commandCalledAs: commandCalledAs,
 
     // commands is the list of commands supported by this program.
@@ -295,6 +299,9 @@ impl Default for Command {
             ctx: None,
             inReader: false,
             completionCommandGroupID: string(""),
+            usageTemplate: None,
+            helpTemplate: None,
+            versionTemplate: None,
             commandCalledAs: Default::default(),
             commands: alloc::vec::Vec::new(),
             parent: core::ptr::null_mut(),
@@ -2055,5 +2062,98 @@ impl Command {
         unsafe {
             (*root).completionCommandGroupID = groupID;
         }
+    }
+}
+
+// ── command.go's template accessors ────────────────────────────────────
+//
+// These store and return the template TEXT, which needs no template
+// engine. Go wraps the text with tmpl(), whose rendering closure is the
+// part that needs text/template; this port renders help natively, so
+// only the accessor contract is reproduced here.
+
+// go: github.com/spf13/cobra@v1.10.2 command.go:1942-1971 defaultUsageTemplate
+pub const defaultUsageTemplate: &str = r#"Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
+
+Available Commands:{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
+
+{{.Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
+
+Additional Commands:{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+"#;
+
+// go: github.com/spf13/cobra@v1.10.2 command.go:2042-2044 defaultHelpTemplate
+pub const defaultHelpTemplate: &str = r#"{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
+
+{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}"#;
+
+// go: github.com/spf13/cobra@v1.10.2 command.go:2064-2065 defaultVersionTemplate
+pub const defaultVersionTemplate: &str = r#"{{with .DisplayName}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
+"#;
+
+impl Command {
+    // go: github.com/spf13/cobra@v1.10.2 command.go:318-324 Command.SetUsageTemplate
+    /// Go clears the template when handed "" — the empty string means
+    /// "fall back to the default", not "render nothing".
+    pub fn SetUsageTemplate(&mut self, s: string) {
+        if s == "" { self.usageTemplate = None; return; }
+        self.usageTemplate = Some(s);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:358-364 Command.SetHelpTemplate
+    pub fn SetHelpTemplate(&mut self, s: string) {
+        if s == "" { self.helpTemplate = None; return; }
+        self.helpTemplate = Some(s);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:367-373 Command.SetVersionTemplate
+    pub fn SetVersionTemplate(&mut self, s: string) {
+        if s == "" { self.versionTemplate = None; return; }
+        self.versionTemplate = Some(s);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:592-601 Command.UsageTemplate
+    /// Own template, else the PARENT's, else the package default —
+    /// inheritance a caller relies on when setting one template at root.
+    pub fn UsageTemplate(&self) -> string {
+        if let Some(ref t) = self.usageTemplate { return t.clone(); }
+        if self.HasParent() { return unsafe { (*self.parent).UsageTemplate() }; }
+        return string::from_bytes(defaultUsageTemplate.as_bytes());
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:605-614 Command.HelpTemplate
+    pub fn HelpTemplate(&self) -> string {
+        if let Some(ref t) = self.helpTemplate { return t.clone(); }
+        if self.HasParent() { return unsafe { (*self.parent).HelpTemplate() }; }
+        return string::from_bytes(defaultHelpTemplate.as_bytes());
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:618-627 Command.VersionTemplate
+    pub fn VersionTemplate(&self) -> string {
+        if let Some(ref t) = self.versionTemplate { return t.clone(); }
+        if self.HasParent() { return unsafe { (*self.parent).VersionTemplate() }; }
+        return string::from_bytes(defaultVersionTemplate.as_bytes());
     }
 }
