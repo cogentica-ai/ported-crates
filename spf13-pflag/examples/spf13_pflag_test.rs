@@ -51,6 +51,7 @@ fn main() {
         ("TestBytesHexAndBase64", test_bytes_hex_and_base64),
         ("TestIPAndIPNet", test_ip_and_ipnet),
         ("TestIPMaskBothForms", test_ipmask_both_forms),
+        ("TestIPSlices", test_ip_slices),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -806,5 +807,42 @@ fn test_ipmask_both_forms(t: &mut testing::T) {
     }
     if m.String() != "ffff0000" {
         t.Fatal(fmt::Sprintf!("mask = %s, want ffff0000", m.String()));
+    }
+}
+
+fn test_ip_slices(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut ips: goish::goslice::slice<goish::net::IP> = goish::make!([]goish::net::IP, 0);
+    let mut nets: goish::goslice::slice<goish::net::IPNet> = goish::make!([]goish::net::IPNet, 0);
+    fs.IPSliceVar(&mut ips as *mut goish::goslice::slice<goish::net::IP>,
+                  string("ips"), goish::make!([]goish::net::IP, 0), string("ips"));
+    fs.IPNetSliceVar(&mut nets as *mut goish::goslice::slice<goish::net::IPNet>,
+                     string("nets"), goish::make!([]goish::net::IPNet, 0), string("nets"));
+    if fs.Parse(slice!([]string {
+        string("--ips=1.2.3.4,5.6.7.8"), string("--nets=10.1.2.3/8") })) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if ips.Len() != 2 || ips[0].String() != "1.2.3.4" || ips[1].String() != "5.6.7.8" {
+        t.Fatal(fmt::Sprintf!("ip slice wrong, len %d", ips.Len() as i64));
+    }
+    // Same masking rule as the scalar ipNet flag.
+    if nets.Len() != 1 || nets[0].String() != "10.0.0.0/8" {
+        t.Fatal(fmt::Sprintf!("ipnet slice wrong"));
+    }
+    let (g, err) = fs.GetIPSlice("ips");
+    if err != nil || g.Len() != 2 {
+        t.Fatal(fmt::Sprintf!("GetIPSlice err=%v", err));
+    }
+    let (gn, err2) = fs.GetIPNetSlice("nets");
+    if err2 != nil || gn.Len() != 1 {
+        t.Fatal(fmt::Sprintf!("GetIPNetSlice err=%v", err2));
+    }
+    // A malformed member must fail the whole flag.
+    let mut fs2 = NewFlagSet("t2", ContinueOnError);
+    let mut x: goish::goslice::slice<goish::net::IP> = goish::make!([]goish::net::IP, 0);
+    fs2.IPSliceVar(&mut x as *mut goish::goslice::slice<goish::net::IP>,
+                   string("a"), goish::make!([]goish::net::IP, 0), string("x"));
+    if fs2.Parse(slice!([]string { string("--a=1.2.3.4,nope") })) == nil {
+        t.Fatal(fmt::Sprintf!("a malformed member must fail the flag"));
     }
 }
