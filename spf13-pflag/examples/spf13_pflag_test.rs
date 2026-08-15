@@ -12,7 +12,7 @@ use goish::testing;
 use goish::fmt;
 use goish::{nil, slice, int32, int};
 use goish::time;
-use goish::types::{uint, float64};
+use goish::types::{uint, float64, int8, uint16, float32};
 use spf13_pflag::{NewFlagSet, ContinueOnError};
 
 #[goish::main]
@@ -37,6 +37,10 @@ fn main() {
         ("TestNFlag", test_nflag),
         ("TestArgs", test_args),
         ("TestLookup", test_lookup),
+        ("TestInt8Flag", test_int8_flag),
+        ("TestUint16Flag", test_uint16_flag),
+        ("TestFloat32Flag", test_float32_flag),
+        ("TestGetFlagTypeMismatch", test_getflagtype_mismatch),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -472,5 +476,83 @@ fn test_lookup(t: &mut testing::T) {
     let missing = fs.Lookup("nonexistent");
     if missing.is_some() {
         t.Fatal(fmt::Sprintf!("Lookup should return None for nonexistent flag"));
+    }
+}
+
+// The per-type scalar family (int8.go and its six structural twins) plus
+// the getFlagType spine every GetX routes through.
+
+fn test_int8_flag(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: int8 = 0;
+    fs.Int8Var(&mut val as *mut int8, string("level"), 3, string("a level"));
+    if val != 3 {
+        t.Fatal(fmt::Sprintf!("default not stored: got %d, want 3", val as i64));
+    }
+    let args = slice!([]string { string("--level"), string("-42") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val != -42 {
+        t.Fatal(fmt::Sprintf!("expected -42, got %d", val as i64));
+    }
+    let (n, err) = fs.GetInt8("level");
+    if err != nil {
+        t.Fatal(fmt::Sprintf!("GetInt8 error: %v", err));
+    }
+    if n != -42 {
+        t.Fatal(fmt::Sprintf!("GetInt8 = %d, want -42", n as i64));
+    }
+}
+
+fn test_uint16_flag(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: uint16 = 0;
+    fs.Uint16Var(&mut val as *mut uint16, string("port"), 80, string("a port"));
+    let args = slice!([]string { string("--port=65535") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val != 65535 {
+        t.Fatal(fmt::Sprintf!("expected 65535, got %d", val as i64));
+    }
+    let (n, err) = fs.GetUint16("port");
+    if err != nil || n != 65535 {
+        t.Fatal(fmt::Sprintf!("GetUint16 = %d err=%v, want 65535", n as i64, err));
+    }
+}
+
+fn test_float32_flag(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: float32 = 0.0;
+    fs.Float32Var(&mut val as *mut float32, string("ratio"), 1.0, string("a ratio"));
+    let args = slice!([]string { string("--ratio"), string("2.5") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val != 2.5 {
+        t.Fatal(fmt::Sprintf!("expected 2.5, got %v", val as f64));
+    }
+    let (n, err) = fs.GetFloat32("ratio");
+    if err != nil || n != 2.5 {
+        t.Fatal(fmt::Sprintf!("GetFloat32 = %v err=%v, want 2.5", n as f64, err));
+    }
+}
+
+/// getFlagType's two error arms: an undefined flag, and a real flag whose
+/// Value.Type() is not what the caller asked for. Without the second, a
+/// GetX could hand back a parse of an unrelated flag's string form.
+fn test_getflagtype_mismatch(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut s: goish::gostring::string = string("");
+    fs.StringVar(&mut s as *mut goish::gostring::string, string("name"), string("x"), string("a name"));
+
+    let (_, err) = fs.GetInt8("name");
+    if err == nil {
+        t.Fatal(fmt::Sprintf!("GetInt8 on a string flag must fail"));
+    }
+    let (_, err2) = fs.GetInt8("nope");
+    if err2 == nil {
+        t.Fatal(fmt::Sprintf!("GetInt8 on an undefined flag must fail"));
     }
 }

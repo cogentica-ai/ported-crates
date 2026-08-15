@@ -10,6 +10,24 @@
 
 extern crate alloc;
 
+// One module per Go file, per AGENTS.md §38 — the per-type flag files
+// each carry their own decls manifest and anchors.
+mod float32;
+mod int16;
+mod int8;
+mod uint16;
+mod uint32;
+mod uint64;
+mod uint8;
+
+pub use crate::float32::*;
+pub use crate::int16::*;
+pub use crate::int8::*;
+pub use crate::uint16::*;
+pub use crate::uint32::*;
+pub use crate::uint64::*;
+pub use crate::uint8::*;
+
 use goish::fmt;
 use goish::strings;
 use goish::strconv;
@@ -488,6 +506,49 @@ impl FlagSet {
         usage: string,
     ) {
         let _ = self.VarPF(value, name, shorthand, usage);
+    }
+
+    // go: github.com/spf13/pflag@v1.0.10 flag.go:404-422 FlagSet.getFlagType
+    /// The shared spine of every `GetX`: look the flag up, reject a type
+    /// mismatch, then run the caller's conv func over the string form.
+    /// Go's `interface{}` result is `goany::Any` here, which is what lets
+    /// the ~40 `xConv` functions port with their real signature instead
+    /// of each `GetX` hand-inlining its own parse.
+    pub fn getFlagType(
+        &self,
+        name: string,
+        ftype: string,
+        convFunc: fn(string) -> (goish::goany::Any, error),
+    ) -> (goish::goany::Any, error) {
+        let flag = match self.Lookup(name.clone()) {
+            None => {
+                return (
+                    goish::goany::Any::from(nil),
+                    errors::Wrap(NotExistError {
+                        name,
+                        message_type: flagNotDefinedMessage,
+                        ..Default::default()
+                    }),
+                );
+            }
+            Some(f) => f,
+        };
+        if flag.Value.Type() != ftype {
+            return (
+                goish::goany::Any::from(nil),
+                fmt::Errorf!(
+                    "trying to get %s value of flag of type %s",
+                    ftype,
+                    flag.Value.Type()
+                ),
+            );
+        }
+        let sval = flag.Value.String();
+        let (result, err) = convFunc(sval);
+        if err != nil {
+            return (goish::goany::Any::from(nil), err);
+        }
+        return (result, nil.into());
     }
 
     pub fn VarPF(
