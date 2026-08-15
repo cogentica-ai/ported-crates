@@ -41,6 +41,9 @@ fn main() {
         ("TestUint16Flag", test_uint16_flag),
         ("TestFloat32Flag", test_float32_flag),
         ("TestGetFlagTypeMismatch", test_getflagtype_mismatch),
+        ("TestInt64SliceFlag", test_int64_slice_flag),
+        ("TestSliceReplaceThenAppend", test_slice_replace_then_append),
+        ("TestSliceValueIface", test_slicevalue_iface),
     ];
     let code = testing::Main(tests);
     syscall::Exit(int32(code));
@@ -554,5 +557,72 @@ fn test_getflagtype_mismatch(t: &mut testing::T) {
     let (_, err2) = fs.GetInt8("nope");
     if err2 == nil {
         t.Fatal(fmt::Sprintf!("GetInt8 on an undefined flag must fail"));
+    }
+}
+
+// The slice family: CSV parsing, the replace-then-append rule, and the
+// public SliceValue interface consumers (cobra/viper) reach through.
+
+fn test_int64_slice_flag(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::goslice::slice<i64> = goish::make!([]i64, 0);
+    fs.Int64SliceVar(&mut val as *mut goish::goslice::slice<i64>,
+                     string("ids"), goish::make!([]i64, 0), string("ids"));
+    let args = slice!([]string { string("--ids"), string("1,2,3") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val.Len() != 3 || val[0] != 1 || val[2] != 3 {
+        t.Fatal(fmt::Sprintf!("got len %d, want [1,2,3]", val.Len() as i64));
+    }
+    let (got, err) = fs.GetInt64Slice("ids");
+    if err != nil || got.Len() != 3 || got[1] != 2 {
+        t.Fatal(fmt::Sprintf!("GetInt64Slice len=%d err=%v", got.Len() as i64, err));
+    }
+}
+
+/// Go's rule: the FIRST --flag replaces the default, every later one
+/// appends. Without the `changed` latch, `--ids=1 --ids=2` would mean
+/// [2] rather than [1,2] — a silent difference, so it gets a tripwire.
+fn test_slice_replace_then_append(t: &mut testing::T) {
+    let mut fs = NewFlagSet("test", ContinueOnError);
+    let mut val: goish::goslice::slice<i64> = goish::make!([]i64, 0);
+    fs.Int64SliceVar(&mut val as *mut goish::goslice::slice<i64>,
+                     string("ids"), slice!([]i64 { 99i64 }), string("ids"));
+    if val.Len() != 1 || val[0] != 99 {
+        t.Fatal(fmt::Sprintf!("default not stored"));
+    }
+    let args = slice!([]string { string("--ids=1"), string("--ids=2") });
+    if fs.Parse(args) != nil {
+        t.Fatal(fmt::Sprintf!("parse failed"));
+    }
+    if val.Len() != 2 || val[0] != 1 || val[1] != 2 {
+        t.Fatal(fmt::Sprintf!("want [1,2] (default replaced then appended), got len %d", val.Len() as i64));
+    }
+}
+
+fn test_slicevalue_iface(t: &mut testing::T) {
+    use spf13_pflag::SliceValue;
+    let mut backing: goish::goslice::slice<i64> = goish::make!([]i64, 0);
+    let mut v = spf13_pflag::newInt64SliceValue(
+        slice!([]i64 { 7i64 }), &mut backing as *mut goish::goslice::slice<i64>);
+    if v.Append(string("8")) != nil {
+        t.Fatal(fmt::Sprintf!("Append failed"));
+    }
+    if backing.Len() != 2 || backing[1] != 8 {
+        t.Fatal(fmt::Sprintf!("Append did not extend the list"));
+    }
+    if v.Replace(slice!([]string { string("5"), string("6") })) != nil {
+        t.Fatal(fmt::Sprintf!("Replace failed"));
+    }
+    if backing.Len() != 2 || backing[0] != 5 {
+        t.Fatal(fmt::Sprintf!("Replace did not overwrite"));
+    }
+    let got = v.GetSlice();
+    if got.Len() != 2 || got[0] != "5" || got[1] != "6" {
+        t.Fatal(fmt::Sprintf!("GetSlice = %s,%s", got[0].clone(), got[1].clone()));
+    }
+    if v.Append(string("notanumber")) == nil {
+        t.Fatal(fmt::Sprintf!("Append must reject a non-numeric value"));
     }
 }

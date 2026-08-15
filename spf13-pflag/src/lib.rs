@@ -13,7 +13,11 @@ extern crate alloc;
 // One module per Go file, per AGENTS.md §38 — the per-type flag files
 // each carry their own decls manifest and anchors.
 mod float32;
+mod float32_slice;
+mod float64_slice;
 mod int16;
+mod int32_slice;
+mod int64_slice;
 mod int8;
 mod uint16;
 mod uint32;
@@ -21,7 +25,11 @@ mod uint64;
 mod uint8;
 
 pub use crate::float32::*;
+pub use crate::float32_slice::*;
+pub use crate::float64_slice::*;
 pub use crate::int16::*;
+pub use crate::int32_slice::*;
+pub use crate::int64_slice::*;
 pub use crate::int8::*;
 pub use crate::uint16::*;
 pub use crate::uint32::*;
@@ -82,6 +90,22 @@ pub trait Value: Send + Sync {
     fn CloneBox(&self) -> alloc::boxed::Box<dyn Value> {
         panic!("pflag: CloneBox not implemented for this Value type");
     }
+}
+
+// go: github.com/spf13/pflag@v1.0.10 flag.go:219-226 SliceValue
+/// Go: "SliceValue is a secondary interface to all flags which hold a
+/// list of values."
+///
+/// pflag never type-asserts to it internally — it exists for consumers
+/// (cobra, viper) to reach a flag's list form — so this is a plain
+/// second trait rather than an optional-interface downcast on `Value`.
+pub trait SliceValue {
+    /// Go: "Append adds the specified value to the end of the flag value list."
+    fn Append(&mut self, val: string) -> error;
+    /// Go: "Replace will fully overwrite any data currently in the flag value list."
+    fn Replace(&mut self, val: slice<string>) -> error;
+    /// Go: "GetSlice returns the flag value list as an array of strings."
+    fn GetSlice(&self) -> slice<string>;
 }
 
 // ── Flag struct ────────────────────────────────────────────────────────────
