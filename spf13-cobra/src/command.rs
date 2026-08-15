@@ -1967,3 +1967,28 @@ impl Command {
         }
     }
 }
+
+// go: github.com/spf13/cobra@v1.10.2 command.go:1325-1325 commandSorterByName
+/// Go needs this named type because `sort.Sort` dispatches through
+/// Len/Swap/Less. Rust's `sort_by` takes the comparator directly, so
+/// Commands() sorts inline — but the three methods are part of cobra's
+/// declared surface, so they are ported here over the same slice and
+/// Commands() now routes through Less to keep one ordering rule.
+pub struct commandSorterByName<'a>(pub &'a mut alloc::vec::Vec<alloc::boxed::Box<Command>>);
+
+impl<'a> commandSorterByName<'a> {
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1327-1327 commandSorterByName.Len
+    pub fn Len(&self) -> int {
+        return self.0.len() as int;
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1328-1328 commandSorterByName.Swap
+    pub fn Swap(&mut self, i: int, j: int) {
+        self.0.swap(i as usize, j as usize);
+    }
+
+    // go: github.com/spf13/cobra@v1.10.2 command.go:1329-1329 commandSorterByName.Less
+    pub fn Less(&self, i: int, j: int) -> bool {
+        return self.0[i as usize].Name() < self.0[j as usize].Name();
+    }
+}
