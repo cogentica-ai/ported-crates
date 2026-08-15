@@ -48,6 +48,7 @@ mod string_array_pkg;
 #[path = "time_flag.rs"]
 mod time_flag;
 mod errors_pkg;
+mod flag_pkg;
 mod int8;
 mod uint_slice;
 mod uint16;
@@ -87,6 +88,7 @@ pub use crate::bool_func::*;
 pub use crate::string_slice_pkg::*;
 pub use crate::string_array_pkg::*;
 pub use crate::time_flag::*;
+pub use crate::flag_pkg::*;
 pub use crate::int8::*;
 pub use crate::uint_slice::*;
 pub use crate::uint16::*;
@@ -301,15 +303,47 @@ pub struct FlagSet {
     error_handling: ErrorHandling,
     interspersed: bool,
     normalize_name_fn: Option<alloc::boxed::Box<dyn Fn(&FlagSet, string) -> NormalizedName + Send + Sync>>,
+    // go: none — backing for Output/SetOutput (flag.go:283-299).
+    output: Option<alloc::boxed::Box<dyn io::Writer + Send + Sync>>,
 }
 
 impl FlagSet {
-    fn output_write(&self, s: string) {
-        let mut f = os::Stderr();
-        let _ = f.Write(bytes(s));
+    // go: none — Goish glue: flag_pkg's defaultUsage/ParseAll need the
+    // same sink from a sibling module.
+    pub fn __output_write(&self, s: string) {
+        self.output_write(s)
+    }
+    // go: none — Goish glue for ParseAll's error-handling switch.
+    pub fn __error_handling(&self) -> ErrorHandling {
+        self.error_handling
+    }
+    // go: none — Goish glue: Go writes `f.args = make(...)` inline.
+    pub fn __reset_args(&mut self) {
+        self.args = slice::<string>::from(nil);
     }
 
-    fn normalize_flag_name(&self, name: string) -> NormalizedName {
+    fn output_write(&self, s: string) {
+        // Go writes to f.Output(), which is os.Stderr unless SetOutput
+        // was called; the &self here means the stored writer is used
+        // through a raw re-borrow, matching that behaviour.
+        match self.output {
+            None => {
+                let mut f = os::Stderr();
+                let _ = f.Write(bytes(s));
+            }
+            Some(ref w) => {
+                let p = w.as_ref() as *const (dyn io::Writer + Send + Sync)
+                    as *mut (dyn io::Writer + Send + Sync);
+                unsafe {
+                    let _ = (*p).Write(bytes(s));
+                }
+            }
+        }
+    }
+
+    // go: github.com/spf13/pflag@v1.0.10 flag.go:276-279 FlagSet.normalizeFlagName
+
+    pub fn normalizeFlagName(&self, name: string) -> NormalizedName {
         if let Some(ref f) = self.normalize_name_fn {
             f(self, name)
         } else {
@@ -380,7 +414,7 @@ impl FlagSet {
 
     pub fn Lookup<S: Into<string>>(&self, name: S) -> Option<&Flag> {
         let name = name.into();
-        let norm = self.normalize_flag_name(name);
+        let norm = self.normalizeFlagName(name);
         let (idx_ref, ok) = self.formal.GetRef(norm.clone()); let idx = idx_ref.copied().unwrap_or(0);
         if !ok {
             return None;
@@ -390,7 +424,7 @@ impl FlagSet {
 
     fn lookup_mut<S: Into<string>>(&mut self, name: S) -> Option<&mut Flag> {
         let name = name.into();
-        let norm = self.normalize_flag_name(name);
+        let norm = self.normalizeFlagName(name);
         let (idx_ref, ok) = self.formal.GetRef(norm.clone()); let idx = idx_ref.copied().unwrap_or(0);
         if !ok {
             return None;
@@ -458,7 +492,7 @@ impl FlagSet {
             }
             names.sort_by(|a, b| { let a_s: &str = a.as_ref(); let b_s: &str = b.as_ref(); a_s.cmp(b_s) });
             for name in &names {
-                let norm = self.normalize_flag_name(name.clone());
+                let norm = self.normalizeFlagName(name.clone());
                 let (idx_ref2, ok) = self.actual.GetRef(norm.clone()); let idx = idx_ref2.copied().unwrap_or(0);
                 if ok {
                     fn_(&self.flags[idx]);
@@ -477,7 +511,7 @@ impl FlagSet {
     pub fn Set<N: Into<string>, V: Into<string>>(&mut self, name: N, value: V) -> error {
         let name = name.into();
         let value = value.into();
-        let norm = self.normalize_flag_name(name.clone());
+        let norm = self.normalizeFlagName(name.clone());
         let (idx_ref, ok) = self.formal.GetRef(norm.clone()); let idx = idx_ref.copied().unwrap_or(0);
         if !ok {
             return errors::Wrap(NotExistError {
@@ -497,7 +531,7 @@ impl FlagSet {
             });
         }
         if !self.flags[idx].Changed {
-            let norm2 = self.normalize_flag_name(self.flags[idx].Name.clone());
+            let norm2 = self.normalizeFlagName(self.flags[idx].Name.clone());
             self.actual.Set(norm2.clone(), idx);
             self.ordered_actual = append!(self.ordered_actual.clone(), idx);
             self.flags[idx].Changed = true;
@@ -667,7 +701,7 @@ impl FlagSet {
     }
 
     fn add_flag(&mut self, flag: alloc::boxed::Box<Flag>) -> usize {
-        let norm = self.normalize_flag_name(flag.Name.clone());
+        let norm = self.normalizeFlagName(flag.Name.clone());
         let already = self.formal.Has(norm.clone());
         if already {
             let msg = fmt::Sprintf!("%s flag redefined: %s", self.name.clone(), flag.Name.clone());
@@ -756,12 +790,12 @@ impl FlagSet {
             } else {
                 line = fmt::Sprintf!("      --%s", flag.Name.clone());
             }
-            let (varname, usage) = unquote_usage(flag);
+            let (varname, usage) = UnquoteUsage(flag);
             let mut line2 = line;
             if varname.Len() > 0 {
                 line2 = (line2) + (" ") + (varname);
             }
-            if !default_is_zero_value(flag) {
+            if !defaultIsZeroValue(flag) {
                 if flag.Value.Type() == "string" {
                     line2 = (line2) + (fmt::Sprintf!(" (default %q)", flag.DefValue.clone()));
                 } else {
@@ -791,7 +825,9 @@ impl FlagSet {
         err
     }
 
-    fn parse_long_arg<F>(&mut self, s: string, args: &mut alloc::vec::Vec<string>, fn_: &mut F) -> error
+    // go: github.com/spf13/pflag@v1.0.10 flag.go:980-1038 FlagSet.parseLongArg
+
+    pub fn parseLongArg<F>(&mut self, s: string, args: &mut alloc::vec::Vec<string>, fn_: &mut F) -> error
     where
         F: FnMut(&mut FlagSet, string, string) -> error,
     {
@@ -814,7 +850,7 @@ impl FlagSet {
             (name_part, string(""), false)
         };
 
-        let norm = self.normalize_flag_name(name.clone());
+        let norm = self.normalizeFlagName(name.clone());
         let (fi_ref, exists) = self.formal.GetRef(norm.clone()); let flag_idx = fi_ref.copied().unwrap_or(0);
 
         if !exists {
@@ -824,7 +860,7 @@ impl FlagSet {
             }
             if self.ParseErrorsAllowlist.UnknownFlags || self.ParseErrorsWhitelist.UnknownFlags {
                 if !has_value {
-                    strip_unknown_flag_value(args);
+                    stripUnknownFlagValue(args);
                 }
                 return nil.into();
             }
@@ -859,7 +895,9 @@ impl FlagSet {
         nil.into()
     }
 
-    fn parse_single_short_arg<F>(
+    // go: github.com/spf13/pflag@v1.0.10 flag.go:1040-1114 FlagSet.parseSingleShortArg
+
+    pub fn parseSingleShortArg<F>(
         &mut self,
         shorthands: string,
         args: &mut alloc::vec::Vec<string>,
@@ -885,7 +923,7 @@ impl FlagSet {
                 if shorthands.Len() > 2 && shorthands[1usize] == b'=' {
                     return (string(""), nil.into());
                 }
-                strip_unknown_flag_value(args);
+                stripUnknownFlagValue(args);
                 return (rest, nil.into());
             }
             return (
@@ -941,7 +979,9 @@ impl FlagSet {
         (new_rest, nil.into())
     }
 
-    fn parse_args<F>(&mut self, mut args: alloc::vec::Vec<string>, fn_: &mut F) -> error
+    // go: github.com/spf13/pflag@v1.0.10 flag.go:1131-1160 FlagSet.parseArgs
+
+    pub fn parseArgs<F>(&mut self, mut args: alloc::vec::Vec<string>, fn_: &mut F) -> error
     where
         F: FnMut(&mut FlagSet, string, string) -> error,
     {
@@ -967,14 +1007,14 @@ impl FlagSet {
                     }
                     return nil.into();
                 }
-                let err = self.parse_long_arg(s, &mut args, fn_);
+                let err = self.parseLongArg(s, &mut args, fn_);
                 if err != nil {
                     return err;
                 }
             } else {
                 let mut shorthands = s.slice(1, s.Len());
                 while shorthands.Len() > 0 {
-                    let (new_sh, err) = self.parse_single_short_arg(shorthands, &mut args, fn_);
+                    let (new_sh, err) = self.parseSingleShortArg(shorthands, &mut args, fn_);
                     if err != nil {
                         return err;
                     }
@@ -1000,7 +1040,7 @@ impl FlagSet {
         let mut set_fn = |fs: &mut FlagSet, name: string, value: string| -> error {
             fs.Set(name, value)
         };
-        let err = self.parse_args(args_vec, &mut set_fn);
+        let err = self.parseArgs(args_vec, &mut set_fn);
         if err != nil {
             match self.error_handling {
                 0 /* ContinueOnError */ => return err,
@@ -1577,6 +1617,7 @@ pub fn NewFlagSet<S: Into<string>>(name: S, error_handling: ErrorHandling) -> Fl
         error_handling,
         interspersed: true,
         normalize_name_fn: None,
+        output: None,
     }
 }
 
@@ -1587,7 +1628,9 @@ pub static COMMAND_LINE: Lazy<sync::Mutex<FlagSet>> =
 
 // ── Helper functions ───────────────────────────────────────────────────────
 
-fn strip_unknown_flag_value(args: &mut alloc::vec::Vec<string>) {
+// go: github.com/spf13/pflag@v1.0.10 flag.go:961-978 stripUnknownFlagValue
+
+pub fn stripUnknownFlagValue(args: &mut alloc::vec::Vec<string>) {
     if args.is_empty() {
         return;
     }
@@ -1602,7 +1645,9 @@ fn strip_unknown_flag_value(args: &mut alloc::vec::Vec<string>) {
     }
 }
 
-fn default_is_zero_value(flag: &Flag) -> bool {
+// go: github.com/spf13/pflag@v1.0.10 flag.go:559-587 Flag.defaultIsZeroValue
+
+pub fn defaultIsZeroValue(flag: &Flag) -> bool {
     let __type = flag.Value.Type(); let __type_str: &str = __type.as_ref(); match __type_str {
         "bool" => flag.DefValue == "false" || flag.DefValue.Len() == 0,
         "duration" => flag.DefValue == "0" || flag.DefValue == "0s",
@@ -1619,7 +1664,9 @@ fn default_is_zero_value(flag: &Flag) -> bool {
     }
 }
 
-fn unquote_usage(flag: &Flag) -> (string, string) {
+// go: github.com/spf13/pflag@v1.0.10 flag.go:594-633 UnquoteUsage
+
+pub fn UnquoteUsage(flag: &Flag) -> (string, string) {
     let usage = flag.Usage.clone();
     let bytes = usage.as_bytes();
     let mut i = 0usize;
