@@ -7,7 +7,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-goish = { git = "https://github.com/cogentica-ai/goish", tag = "v1.0.0-alpha.1" }
+goish = { git = "https://github.com/cogentica-ai/goish", tag = "v1.0.0-alpha.2" }
 
 [profile.dev]
 panic = "abort"
